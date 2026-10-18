@@ -16,7 +16,7 @@ export function Scoreboard({ s, team }: { s: Summary; team: TeamConfig }) {
 
   return (
     <div className="overflow-hidden rounded-3xl border border-border bg-surface">
-      <div className="h-1" style={{ background: team.color }} />
+      <div className="h-1" style={{ background: accent(team, away, home) }} />
       <div className="px-4 pt-4 pb-3 text-center text-xs font-medium text-muted">
         {st.state === 'in' ? (
           <LiveBadge label={st.shortDetail.toUpperCase()} />
@@ -79,6 +79,13 @@ function Side({
       </div>
     </div>
   )
+}
+
+/** Our color when we're playing, otherwise a split of both teams' colors. */
+function accent(team: TeamConfig, away: Competitor, home: Competitor) {
+  if (away.team.id === team.id || home.team.id === team.id) return team.color
+  const c = (x: Competitor) => (x.team.color ? `#${x.team.color}` : 'var(--border)')
+  return `linear-gradient(90deg, ${c(away)} 50%, ${c(home)} 50%)`
 }
 
 function Ball() {

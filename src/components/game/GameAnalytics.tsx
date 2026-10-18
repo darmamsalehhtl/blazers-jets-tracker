@@ -9,6 +9,7 @@ import {
 } from '../../lib/analytics'
 import { scoreText, teamLogo } from '../../lib/espn'
 import { num, pct } from '../../lib/format'
+import { perspective } from '../../lib/perspective'
 import type { Summary } from '../../lib/summary'
 import type { TeamConfig } from '../../lib/teams'
 import { Card, Empty, Logo } from '../ui'
@@ -27,12 +28,11 @@ export function GameAnalytics({ s, team }: { s: Summary; team: TeamConfig }) {
   const comp = s.header.competitions[0]
   const away = comp.competitors.find((c) => c.homeAway === 'away')!
   const home = comp.competitors.find((c) => c.homeAway === 'home')!
-  const ourHome = home.team.id === team.id
   const rows = team.league === 'nba' ? nbaRows(s) : nflRows(s)
 
   return (
     <div className="space-y-3">
-      <ScoreFlowChart s={s} team={team} ourHome={ourHome} />
+      <ScoreFlowChart s={s} team={team} />
       {rows.length ? (
         <Card title="Advanced" pad={false}>
           <div className="flex items-center justify-between px-4 pb-1 text-xs font-semibold">
@@ -143,14 +143,15 @@ function nflRows(s: Summary): Row[] {
   ]
 }
 
-function ScoreFlowChart({ s, team, ourHome }: { s: Summary; team: TeamConfig; ourHome: boolean }) {
-  const data = scoreFlow(s, ourHome, team.league)
+function ScoreFlowChart({ s, team }: { s: Summary; team: TeamConfig }) {
+  const pov = perspective(s, team)
+  const data = scoreFlow(s, pov.home, team.league)
   if (data.length < 2) return null
   const max = Math.max(5, ...data.map((d) => Math.abs(d.margin)))
   const qLen = team.league === 'nba' ? 12 : 15
   const end = Math.max(4 * qLen, data[data.length - 1].t)
   return (
-    <Card title={`${team.nickname} score margin`}>
+    <Card title={`${pov.name} score margin`}>
       <div className="h-40">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 6, right: 4, bottom: 0, left: -22 }}>
@@ -191,9 +192,9 @@ function ScoreFlowChart({ s, team, ourHome }: { s: Summary; team: TeamConfig; ou
             <Area
               type="stepAfter"
               dataKey="margin"
-              stroke={team.color}
+              stroke={pov.color}
               strokeWidth={2}
-              fill={team.color}
+              fill={pov.color}
               fillOpacity={0.12}
               isAnimationActive={false}
               dot={false}
