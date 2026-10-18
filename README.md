@@ -1,32 +1,47 @@
-# React + TypeScript + Vite
+# Blazers + Jets Tracker
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A personal, real-time stats app for the **Portland Trail Blazers** and the **New York Jets**.
+It works on phone and laptop and can be installed to your home screen.
 
-Currently, two official plugins are available:
+**Live:** https://darmamsalehhtl.github.io/blazers-jets-tracker/
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## What it does
 
-## React Compiler
+- **Home screen:** if the Jets or Blazers are playing, it opens that game automatically (the Jets win if both are on). Otherwise you get a team picker with each team's next and last game.
+- **Live games** refresh every 20 seconds and include:
+  - scoreboard, line score, down and distance with a field-position strip (NFL), and a win-probability chart
+  - box scores, a team stat comparison, game leaders, and play-by-play or a drive chart
+  - a shot chart with zone splits (NBA)
+  - live analytics: offensive/defensive rating, four factors and biggest run (NBA); success rate, explosive plays, red-zone and third-down efficiency (NFL)
+  - odds, injuries, officials and venue info
+- **Team pages:**
+  - overview with recent form, a scoring trend chart and division standings
+  - full schedule for any season
+  - 100–286 team stats, each with its **league rank**
+  - every player's season stats, sortable
+  - roster, including NBA salaries
+  - standings and news
+- **Advanced:**
+  - **Jets:** EPA/play, success rate, PROE, CPOE and more, ranked against all 32 teams; an offense-vs-defense EPA chart for every team; the biggest win-probability swings; per-player EPA with league ranks (from [nflverse](https://github.com/nflverse/nflverse-data)).
+  - **Blazers:** pace, offensive/defensive/net rating, four factors, clutch record, a season shot chart, and per-player usage, TS%, AST% and REB%, all computed from every box score of the season.
+- **Player pages:** bio, season stats with league ranks, a game-by-game chart, the full game log, every split, career totals, and advanced stats.
+- Light/dark mode toggle.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## How it works
 
-## Expanding the Oxlint configuration
+- Static site (Vite + React + TypeScript + Tailwind) hosted on GitHub Pages.
+- Live data comes straight from ESPN's public JSON endpoints in the browser. They send open CORS headers, so no server is needed.
+- `scripts/build-data.mjs` generates the season-analytics JSON. GitHub Actions runs it on every push and every 3 hours, then redeploys.
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+## Run locally
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```sh
+npm install
+node scripts/build-data.mjs   # optional: season analytics into public/data/
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Notes
+
+- ESPN's endpoints are unofficial and could change without notice. All of that code lives in `src/lib/espn.ts`.
+- GitHub turns off scheduled workflows in repos with no activity for 60 days. If the advanced data stops updating, push a commit or run the **Deploy** workflow manually from the Actions tab.
