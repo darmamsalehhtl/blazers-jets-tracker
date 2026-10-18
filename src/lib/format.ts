@@ -29,7 +29,9 @@ export function timeAgo(d: Date | undefined, now = Date.now()) {
   if (s < 60) return `${s}s ago`
   const m = Math.round(s / 60)
   if (m < 60) return `${m}m ago`
-  return `${Math.round(m / 60)}h ago`
+  const h = Math.round(m / 60)
+  if (h < 48) return `${h}h ago`
+  return `${Math.round(h / 24)}d ago`
 }
 
 export function pct(v: number, digits = 1) {

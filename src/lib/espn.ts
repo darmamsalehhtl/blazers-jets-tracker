@@ -19,8 +19,8 @@ export const urls = {
   roster: (t: TeamConfig) => `${SITE}/${path(t)}/teams/${t.id}/roster`,
   teamStats: (t: TeamConfig) => `${SITE}/${path(t)}/teams/${t.id}/statistics`,
   injuries: (t: TeamConfig) => `${SITE}/${path(t)}/teams/${t.id}/injuries`,
-  news: (t: TeamConfig) => `${SITE}/${path(t)}/news?team=${t.abbr.toLowerCase()}&limit=30`,
-  standings: (t: TeamConfig, season?: number) => `${SITE_V2}/${path(t)}/standings${qs({ season })}`,
+  news: (t: TeamConfig) => `${SITE}/${path(t)}/news?team=${t.id}&limit=30`,
+  standings: (t: TeamConfig, season?: number, level?: number) => `${SITE_V2}/${path(t)}/standings${qs({ season, level })}`,
   coreTeamStats: (t: TeamConfig, season: number, seasonType: number) =>
     `${CORE}/${t.sport}/leagues/${t.league}/seasons/${season}/types/${seasonType}/teams/${t.id}/statistics`,
   athlete: (t: TeamConfig, id: string) => `${WEB}/${path(t)}/athletes/${id}`,
