@@ -27,6 +27,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Build season analytics data
+        run: node scripts/build-data.mjs
       - run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:
