@@ -1,4 +1,5 @@
-import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { HashRouter, Navigate, Route, Routes, useParams } from 'react-router-dom'
+import type { ReactNode } from 'react'
 import { Layout } from './components/Layout'
 import GamePage from './pages/GamePage'
 import Home from './pages/Home'
@@ -12,12 +13,18 @@ export default function App() {
       <Routes>
         <Route element={<Layout />}>
           <Route index element={<Home />} />
-          <Route path="team/:team" element={<TeamPage />} />
+          <Route path="team/:team" element={<Keyed by="team" page={TeamPage} />} />
           <Route path="game/:team/:eventId" element={<GamePage />} />
-          <Route path="player/:team/:athleteId" element={<PlayerPage />} />
+          <Route path="player/:team/:athleteId" element={<Keyed by="athleteId" page={PlayerPage} />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
     </HashRouter>
   )
+}
+
+/** Remount a page when its route param changes, so no state leaks between teams/players. */
+function Keyed({ by, page: Page }: { by: string; page: () => ReactNode }) {
+  const params = useParams()
+  return <Page key={params[by]} />
 }

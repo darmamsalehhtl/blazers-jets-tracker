@@ -12,20 +12,31 @@ export interface PollState<T> {
   refresh: () => void
 }
 
+interface Result<T> {
+  /** The URL this result was fetched from. */
+  url: string
+  data?: T
+  error?: Error
+  updatedAt?: Date
+}
+
 /**
  * Fetch `url` and re-fetch every `interval` ms (null = fetch once). `interval`
  * can be a function of the latest data, e.g. fast while a game is live.
  * Polling pauses while the tab is hidden and catches up when it's shown.
+ *
+ * Results are tagged with the URL they came from and only returned for that
+ * URL, so when a view switches (e.g. Jets → Blazers) it never renders the
+ * previous view's data, not even for the one render before the refetch starts.
  */
 export function usePoll<T>(
   url: string | null,
   interval: number | null | ((data: T | undefined) => number | null) = null,
 ): PollState<T> {
-  const [data, setData] = useState<T>()
+  const [result, setResult] = useState<Result<T> | null>(null)
+  const current = result && result.url === url ? result : null
+  const data = current?.data
   const intervalMs = typeof interval === 'function' ? interval(data) : interval
-  const [error, setError] = useState<Error>()
-  const [loading, setLoading] = useState(!!url)
-  const [updatedAt, setUpdatedAt] = useState<Date>()
   const ctrl = useRef<AbortController | null>(null)
 
   const load = useCallback(async () => {
@@ -35,35 +46,26 @@ export function usePoll<T>(
     ctrl.current = c
     try {
       const json = await getJSON<T>(url, c.signal)
-      if (c.signal.aborted) return
-      setData(json)
-      setError(undefined)
-      setUpdatedAt(new Date())
+      if (!c.signal.aborted) setResult({ url, data: json, updatedAt: new Date() })
     } catch (e) {
-      if (c.signal.aborted) return
-      setError(e as Error)
-    } finally {
-      if (!c.signal.aborted) setLoading(false)
+      // Keep showing the last good data for this URL if a refresh fails.
+      if (!c.signal.aborted) setResult((r) => ({ ...(r?.url === url ? r : {}), url, error: e as Error }))
     }
   }, [url])
 
-  // Reset when the URL changes so old data never shows under a new view.
   useEffect(() => {
-    setData(undefined)
-    setError(undefined)
-    setLoading(!!url)
     load()
     return () => ctrl.current?.abort()
-  }, [url, load])
+  }, [load])
 
   useEffect(() => {
     if (!url || !intervalMs) return
     let id: number | undefined
+    const stop = () => id !== undefined && window.clearInterval(id)
     const start = () => {
       stop()
       id = window.setInterval(load, intervalMs)
     }
-    const stop = () => id !== undefined && window.clearInterval(id)
     const onVis = () => {
       if (document.hidden) stop()
       else {
@@ -79,5 +81,11 @@ export function usePoll<T>(
     }
   }, [url, intervalMs, load])
 
-  return { data, error, loading, updatedAt, refresh: load }
+  return {
+    data,
+    error: current?.error,
+    loading: !!url && !current,
+    updatedAt: current?.updatedAt,
+    refresh: load,
+  }
 }

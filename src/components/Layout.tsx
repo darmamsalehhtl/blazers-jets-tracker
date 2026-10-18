@@ -1,9 +1,11 @@
-import { Link, NavLink, Outlet } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
+import { ErrorBoundary } from './ErrorBoundary'
 import { TEAM_ORDER, TEAMS } from '../lib/teams'
 import { useTheme } from '../lib/theme'
 
 export function Layout() {
   const { theme, toggle } = useTheme()
+  const location = useLocation()
   return (
     <div className="mx-auto min-h-dvh max-w-5xl">
       <header className="sticky top-0 z-20 border-b border-border bg-bg/85 backdrop-blur-md" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
@@ -36,7 +38,9 @@ export function Layout() {
         </div>
       </header>
       <main className="px-4 pt-4 pb-16">
-        <Outlet />
+        <ErrorBoundary resetKey={location.pathname + location.search}>
+          <Outlet />
+        </ErrorBoundary>
       </main>
     </div>
   )
