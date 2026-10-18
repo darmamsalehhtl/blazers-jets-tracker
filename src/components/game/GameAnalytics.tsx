@@ -166,6 +166,7 @@ function ScoreFlowChart({ s, team, ourHome }: { s: Summary; team: TeamConfig; ou
             />
             <YAxis
               domain={[-max, max]}
+              ticks={[-max, 0, max]}
               tick={{ fill: 'var(--muted)', fontSize: 11 }}
               axisLine={false}
               tickLine={false}
