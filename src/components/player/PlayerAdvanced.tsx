@@ -95,14 +95,16 @@ function NbaAdvanced({ team, id, name, data }: { team: TeamConfig; id: string; n
   )
 }
 
+function R({ r, of }: { r?: number | null; of: number }) {
+  return r ? <span className="text-[11px] text-muted">{ordinal(r)} of {of}</span> : null
+}
+
 function NflAdvanced({ id, name, data }: { id: string; name: string; data: JetsData }) {
   if (!data.available) return <Empty>nflverse data isn't available yet.</Empty>
   const pass = data.players.passing.find((p) => p.espnId === id)
   const rec = data.players.receiving.find((p) => p.espnId === id)
   const rush = data.players.rushing.find((p) => p.espnId === id)
   if (!pass && !rec && !rush) return <Empty>No play-by-play involvement for {name} in {data.season} yet (offensive skill players only).</Empty>
-
-  const R = ({ r, of }: { r?: number | null; of: number }) => (r ? <span className="text-[11px] text-muted">{ordinal(r)} of {of}</span> : null)
 
   return (
     <div className="space-y-3">

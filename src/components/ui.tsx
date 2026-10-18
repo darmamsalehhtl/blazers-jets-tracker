@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react'
-import { timeAgo } from '../lib/format'
 
 export function Card({
   title,
@@ -67,7 +66,7 @@ export function Updated({ at, live }: { at?: Date; live?: boolean }) {
   if (!at) return null
   return (
     <span className="text-[11px] text-muted">
-      {live ? 'Auto-updating · ' : ''}updated {timeAgo(at)}
+      {live ? 'Auto-updating every 20s · ' : ''}updated {at.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', second: '2-digit' })}
     </span>
   )
 }

@@ -15,7 +15,8 @@ export function PlayerGamelog({ team, id }: { team: TeamConfig; id: string }) {
   if (!data) return <Spinner />
 
   const seasons = seasonOptions(data.filters)
-  const current = season ?? Number(data.filters?.find((f) => f.name === 'season')?.value) ?? seasons[0]?.value
+  const filterSeason = Number(data.filters?.find((f) => f.name === 'season')?.value)
+  const current = season ?? (Number.isFinite(filterSeason) ? filterSeason : seasons[0]?.value)
   const groups = [...new Set(rows.map((r) => r.seasonType))]
 
   const cols: Column<GameRow>[] = [

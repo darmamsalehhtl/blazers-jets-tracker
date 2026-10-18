@@ -12,7 +12,7 @@ function teamMap(s: Summary) {
 /** NBA: every play, newest first, filterable by quarter / team / scoring. */
 export function NbaPlays({ s }: { s: Summary }) {
   const teams = teamMap(s)
-  const plays = s.plays ?? []
+  const plays = useMemo(() => s.plays ?? [], [s.plays])
   const periods = [...new Set(plays.map((p) => p.period.number))]
   const [period, setPeriod] = useState<number>(0)
   const [teamId, setTeamId] = useState<string>('')
