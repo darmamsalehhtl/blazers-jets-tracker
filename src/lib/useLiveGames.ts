@@ -9,16 +9,20 @@ export interface TodayGame {
 }
 
 /** Poll fast while live, every minute on game day (to catch the start), else slowly. */
-export function gameInterval(event: EspnEvent | undefined) {
-  const state = event?.competitions[0].status.type.state
+export function gameInterval(state: string | undefined, date: string | undefined) {
   if (state === 'in') return LIVE_MS
-  if (state === 'pre' && isWithinHours(event!.date, 12)) return 60_000
+  if (state === 'pre' && date && isWithinHours(date, 12)) return 60_000
   return IDLE_MS
+}
+
+function eventInterval(event: EspnEvent | undefined) {
+  const comp = event?.competitions[0]
+  return gameInterval(comp?.status.type.state, comp?.date)
 }
 
 function useTeamToday(key: TeamKey): TodayGame & { loading: boolean } {
   const t = TEAMS[key]
-  const sb = usePoll<ScoreboardResponse>(urls.scoreboard(t), (d) => gameInterval(findTeamEvent(d?.events, t.id)))
+  const sb = usePoll<ScoreboardResponse>(urls.scoreboard(t), (d) => eventInterval(findTeamEvent(d?.events, t.id)))
   const event = findTeamEvent(sb.data?.events, t.id)
   return { team: key, event, state: event?.competitions[0].status.type.state, loading: sb.loading }
 }

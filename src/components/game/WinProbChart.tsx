@@ -12,7 +12,8 @@ export function WinProbChart({ s, team }: { s: Summary; team: TeamConfig }) {
 
   const now = data[data.length - 1].ours
   // First index of each period, used as x-axis ticks.
-  const ticks = data.filter((d, i) => i === 0 || data[i - 1].period !== d.period).map((d) => d.i)
+  const seen = new Set<number>()
+  const ticks = data.filter((d) => !seen.has(d.period) && seen.add(d.period)).map((d) => d.i)
 
   return (
     <Card
