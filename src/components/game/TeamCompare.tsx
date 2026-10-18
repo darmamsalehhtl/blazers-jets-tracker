@@ -68,7 +68,7 @@ export function GameLeaders({ s, team }: { s: Summary; team: TeamConfig }) {
   const [a, h] = groups
   const cats = a?.leaders ?? []
   return (
-    <Card title="Leaders" pad={false}>
+    <Card title={s.header.competitions[0].status.type.state === 'pre' ? 'Season leaders' : 'Game leaders'} pad={false}>
       <div className="grid grid-cols-2 gap-3 px-4 pb-1 text-xs font-semibold">
         {[a, h].map((g, i) => (
           <span key={i} className="flex items-center gap-1.5">
@@ -92,7 +92,7 @@ export function GameLeaders({ s, team }: { s: Summary; team: TeamConfig }) {
                       <Headshot src={headshotUrl(l.athlete.headshot)} alt="" size={36} />
                       <div className="min-w-0">
                         <div className="truncate text-sm font-medium">{l.athlete.shortName ?? l.athlete.displayName}</div>
-                        <div className="truncate text-xs text-muted">{l.displayValue}</div>
+                        <div className="line-clamp-2 text-xs text-muted">{l.displayValue}</div>
                       </div>
                     </Link>
                   ) : (

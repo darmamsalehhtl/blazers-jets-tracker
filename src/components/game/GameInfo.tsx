@@ -57,7 +57,7 @@ export function GameInfo({ s, team }: { s: Summary; team: TeamConfig }) {
                         <span className="ml-1 text-xs text-muted">{inj.athlete.position?.abbreviation}</span>
                         {inj.details?.type && (
                           <div className="text-xs text-muted">
-                            {[inj.details.side, inj.details.type, inj.details.detail].filter(Boolean).join(' ')}
+                            {[...new Set([inj.details.side, inj.details.type, inj.details.detail])].filter((x) => x && x !== 'Not Specified').join(' ')}
                             {inj.details.returnDate && ` · return ${new Date(inj.details.returnDate).toLocaleDateString()}`}
                           </div>
                         )}
