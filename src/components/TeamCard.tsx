@@ -50,7 +50,7 @@ export function TeamCard({ teamKey, today }: { teamKey: TeamKey; today?: EspnEve
         </div>
       </Link>
 
-      <div className="grid grid-cols-1 divide-y divide-border border-t border-border sm:grid-cols-2 sm:divide-x sm:divide-y-0">
+      <div className="grid grid-cols-1 divide-y divide-border border-t border-border sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-1 lg:divide-x-0 lg:divide-y">
         {live ? (
           <GameRow label={<LiveBadge />} event={live} teamId={t.id} teamKey={t.key} detail={live.competitions[0].status.type.shortDetail} />
         ) : next ? (

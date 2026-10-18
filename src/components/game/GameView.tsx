@@ -50,8 +50,10 @@ export function GameView({ teamKey, eventId }: { teamKey: TeamKey; eventId: stri
       <div className="flex justify-end">
         <Updated at={updatedAt} live={state === 'in'} />
       </div>
-      <WinProbChart s={s} team={team} />
-      <GameLeaders s={s} team={team} />
+      <div className="grid gap-3 lg:grid-cols-2 lg:items-start">
+        <WinProbChart s={s} team={team} />
+        <GameLeaders s={s} team={team} />
+      </div>
       <Tabs tabs={tabs} value={active} onChange={setTab} />
       {active === 'box' && <BoxScore s={s} team={team} />}
       {active === 'team' && <TeamCompare s={s} />}

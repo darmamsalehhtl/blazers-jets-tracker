@@ -51,9 +51,11 @@ export default function Home() {
         <h1 className="text-2xl font-bold tracking-tight">Your teams</h1>
         <p className="text-sm text-muted">No game on right now. This page switches to the game automatically when one starts.</p>
       </div>
-      {TEAM_ORDER.map((k) => (
-        <TeamCard key={k} teamKey={k} today={games[k].event} />
-      ))}
+      <div className="grid gap-4 lg:grid-cols-2">
+        {TEAM_ORDER.map((k) => (
+          <TeamCard key={k} teamKey={k} today={games[k].event} />
+        ))}
+      </div>
     </div>
   )
 }
