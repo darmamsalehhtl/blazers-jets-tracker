@@ -183,6 +183,50 @@ export function allPlays(s: Summary): Play[] {
   return drives.flatMap((d) => d.plays ?? [])
 }
 
+export interface LiveSituation {
+  downDistanceText?: string
+  possession?: string
+  yardsToEndzone?: number
+  distance?: number
+  isRedZone?: boolean
+  lastPlay?: string
+  homeTimeouts?: number
+  awayTimeouts?: number
+}
+
+const NOT_A_PLAY = /timeout|end (of )?(period|quarter|half|game)|two-minute/i
+
+/**
+ * Current NFL down/distance/field position. ESPN's summary usually omits the
+ * `situation` block during live games, so fall back to the latest play's end state.
+ */
+export function liveSituation(s: Summary): LiveSituation | undefined {
+  const given = s.situation ?? s.header.competitions[0].situation
+  const plays = allPlays(s)
+  const last = [...plays].reverse().find((p) => p.end?.team?.id && p.end.down !== undefined)
+  const lastReal = [...plays].reverse().find((p) => !NOT_A_PLAY.test(p.type?.text ?? '') && !NOT_A_PLAY.test(p.text))
+  const end = last?.end
+  const derived: LiveSituation = end
+    ? {
+        downDistanceText: end.down && end.down > 0 ? end.downDistanceText : undefined,
+        possession: end.team?.id,
+        yardsToEndzone: end.yardsToEndzone,
+        distance: end.distance,
+        isRedZone: end.yardsToEndzone !== undefined && end.yardsToEndzone <= 20,
+      }
+    : {}
+  if (!given && !end) return undefined
+  return {
+    ...derived,
+    downDistanceText: given?.downDistanceText ?? derived.downDistanceText,
+    possession: given?.possession ?? derived.possession,
+    isRedZone: given?.isRedZone ?? derived.isRedZone,
+    lastPlay: given?.lastPlay?.text ?? lastReal?.text,
+    homeTimeouts: given?.homeTimeouts,
+    awayTimeouts: given?.awayTimeouts,
+  }
+}
+
 export function periodLabel(period: number) {
   const reg = 4
   if (period <= reg) return `Q${period}`

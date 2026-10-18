@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { recordText, scoreText, teamLogo, type Competitor } from '../../lib/espn'
 import { countdown, gameDate } from '../../lib/format'
-import { periodLabel, type Summary } from '../../lib/summary'
+import { liveSituation, periodLabel, type Summary } from '../../lib/summary'
 import type { TeamConfig } from '../../lib/teams'
 import { LiveBadge, Logo } from '../ui'
 
@@ -10,7 +10,7 @@ export function Scoreboard({ s, team }: { s: Summary; team: TeamConfig }) {
   const away = comp.competitors.find((c) => c.homeAway === 'away')!
   const home = comp.competitors.find((c) => c.homeAway === 'home')!
   const st = comp.status.type
-  const situation = s.situation ?? comp.situation
+  const situation = team.league === 'nfl' ? liveSituation(s) : undefined
   const tv = comp.broadcasts?.map((b) => b.media?.shortName).filter(Boolean).join(', ')
   const odds = s.pickcenter?.[0]
 
@@ -132,20 +132,19 @@ function LineScore({ away, home }: { away: Competitor; home: Competitor }) {
 /** Down & distance plus a field strip showing where the ball is. */
 function FootballSituation({ s }: { s: Summary }) {
   const comp = s.header.competitions[0]
-  const sit = s.situation ?? comp.situation
+  const sit = liveSituation(s)
   if (!sit) return null
   const offense = comp.competitors.find((c) => c.team.id === sit.possession)
-  // Position from the most recent play's end state, which carries yardsToEndzone.
-  const last = s.drives?.current?.plays?.at(-1)?.end
-  const toGo = last?.yardsToEndzone
+  const toGo = sit.yardsToEndzone
+  // Always drawn with the offense driving left → right.
   const ballX = toGo !== undefined ? 100 - toGo : undefined
-  const firstDownX = ballX !== undefined && last?.distance ? Math.min(100, ballX + last.distance) : undefined
+  const firstDownX = ballX !== undefined && sit.distance ? Math.min(100, ballX + sit.distance) : undefined
 
   return (
     <div className="border-t border-border px-4 py-3">
       <div className="flex items-center justify-between text-sm">
         <span className="font-semibold">
-          {sit.downDistanceText ?? sit.shortDownDistanceText ?? ''}
+          {sit.downDistanceText ?? ''}
           {sit.isRedZone && <span className="ml-2 rounded bg-bad/15 px-1.5 py-0.5 text-[10px] font-bold text-bad">RED ZONE</span>}
         </span>
         {offense && <span className="text-xs text-muted">{offense.team.abbreviation} ball →</span>}
@@ -160,7 +159,7 @@ function FootballSituation({ s }: { s: Summary }) {
           <div className="absolute top-1/2 h-3 w-4 -translate-x-1/2 -translate-y-1/2 rounded-[50%] bg-[#8b4a1c] ring-1 ring-white" style={{ left: `${ballX}%` }} />
         </div>
       )}
-      {sit.lastPlay?.text && <p className="mt-2 text-xs text-muted">Last play: {sit.lastPlay.text}</p>}
+      {sit.lastPlay && <p className="mt-2 text-xs text-muted">Last play: {sit.lastPlay}</p>}
       {(sit.homeTimeouts !== undefined || sit.awayTimeouts !== undefined) && (
         <p className="mt-1 text-[11px] text-muted">
           Timeouts — {comp.competitors.find((c) => c.homeAway === 'away')?.team.abbreviation}: {sit.awayTimeouts ?? '–'} ·{' '}
