@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { Layout } from './components/Layout'
 import GamePage from './pages/GamePage'
 import Home from './pages/Home'
+import LivePage from './pages/LivePage'
 import PlayerPage from './pages/PlayerPage'
 import TeamPage from './pages/TeamPage'
 
@@ -13,6 +14,7 @@ export default function App() {
       <Routes>
         <Route element={<Layout />}>
           <Route index element={<Home />} />
+          <Route path="live" element={<LivePage />} />
           <Route path="team/:team" element={<Keyed by="team" page={TeamPage} />} />
           <Route path="game/:team/:eventId" element={<GamePage />} />
           <Route path="player/:team/:athleteId" element={<Keyed by="athleteId" page={PlayerPage} />} />

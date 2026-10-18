@@ -14,6 +14,15 @@ export function Layout() {
             <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="h-7 w-7" />
             <span className="hidden sm:inline">Tracker</span>
           </Link>
+          <NavLink
+            to="/live"
+            className={({ isActive }) =>
+              `flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium ${isActive ? 'bg-surface-2 text-text' : 'text-muted hover:text-text'}`
+            }
+          >
+            <span className="h-2 w-2 rounded-full bg-live" />
+            Live
+          </NavLink>
           {TEAM_ORDER.map((k) => (
             <NavLink
               key={k}
