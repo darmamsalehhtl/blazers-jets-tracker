@@ -13,11 +13,16 @@ export interface PollState<T> {
 }
 
 /**
- * Fetch `url` and re-fetch every `intervalMs` (null = fetch once).
+ * Fetch `url` and re-fetch every `interval` ms (null = fetch once). `interval`
+ * can be a function of the latest data, e.g. fast while a game is live.
  * Polling pauses while the tab is hidden and catches up when it's shown.
  */
-export function usePoll<T>(url: string | null, intervalMs: number | null = null): PollState<T> {
+export function usePoll<T>(
+  url: string | null,
+  interval: number | null | ((data: T | undefined) => number | null) = null,
+): PollState<T> {
   const [data, setData] = useState<T>()
+  const intervalMs = typeof interval === 'function' ? interval(data) : interval
   const [error, setError] = useState<Error>()
   const [loading, setLoading] = useState(!!url)
   const [updatedAt, setUpdatedAt] = useState<Date>()
