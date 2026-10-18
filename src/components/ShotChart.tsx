@@ -27,18 +27,67 @@ function Court() {
   )
 }
 
+// Above this many shots, individual markers turn into a blob; bin them instead.
+const BIN_THRESHOLD = 250
+const BIN = 2.5
+
+interface Bin {
+  x: number
+  y: number
+  att: number
+  made: number
+}
+
+function binShots(shots: Shot[]): Bin[] {
+  const m = new Map<string, Bin>()
+  for (const s of shots) {
+    const bx = Math.floor(s.x / BIN)
+    const by = Math.floor((s.y + BASKET_Y) / BIN)
+    const k = `${bx},${by}`
+    const b = m.get(k) ?? { x: (bx + 0.5) * BIN, y: (by + 0.5) * BIN, att: 0, made: 0 }
+    b.att++
+    if (s.made) b.made++
+    m.set(k, b)
+  }
+  return [...m.values()]
+}
+
 export function ShotChart({ shots, color, caption }: { shots: Shot[]; color: string; caption?: string }) {
   const [hover, setHover] = useState<Shot | null>(null)
+  const [hoverBin, setHoverBin] = useState<Bin | null>(null)
   const visible = shots.filter((s) => s.y + BASKET_Y <= H)
   const made = shots.filter((s) => s.made).length
   const zones = zoneSplits(shots)
+  const binned = visible.length > BIN_THRESHOLD
+  const bins = binned ? binShots(visible).filter((b) => b.y <= H) : []
+  const maxAtt = Math.max(1, ...bins.map((b) => b.att))
 
   return (
     <div>
       <div className="relative">
         <svg viewBox={`-1 -1 ${W + 2} ${H + 2}`} className="w-full" role="img" aria-label={`Shot chart, ${made} of ${shots.length} made`}>
           <Court />
-          {visible.map((s, i) => {
+          {binned &&
+            bins.map((b, i) => {
+              const pct = b.made / b.att
+              // Sequential single-hue encoding: darker = higher FG% (25%→70% mapped to 0.15→1 opacity).
+              const opacity = 0.15 + 0.85 * Math.min(1, Math.max(0, (pct - 0.25) / 0.45))
+              return (
+                <circle
+                  key={i}
+                  cx={b.x}
+                  cy={b.y}
+                  r={0.35 + (BIN / 2 - 0.2) * Math.sqrt(b.att / maxAtt)}
+                  fill={color}
+                  fillOpacity={opacity}
+                  stroke="var(--surface)"
+                  strokeWidth={0.15}
+                  onMouseEnter={() => setHoverBin(b)}
+                  onClick={() => setHoverBin(b)}
+                />
+              )
+            })}
+          {!binned && visible.map((s, i) => {
             const cx = s.x
             const cy = s.y + BASKET_Y
             const onEnter = () => setHover(s)
@@ -63,7 +112,15 @@ export function ShotChart({ shots, color, caption }: { shots: Shot[]; color: str
             )
           })}
         </svg>
-        {hover && (
+        {binned && hoverBin && (
+          <div className="pointer-events-none absolute top-2 left-2 rounded-lg border border-border bg-surface px-3 py-2 text-xs shadow-lg">
+            <div className="font-semibold">
+              {hoverBin.made}/{hoverBin.att} · {((hoverBin.made / hoverBin.att) * 100).toFixed(1)}%
+            </div>
+            <div className="text-muted">~{distance({ x: hoverBin.x, y: hoverBin.y - BASKET_Y }).toFixed(0)} ft from the rim</div>
+          </div>
+        )}
+        {!binned && hover && (
           <div className="pointer-events-none absolute top-2 left-2 max-w-[75%] rounded-lg border border-border bg-surface px-3 py-2 text-xs shadow-lg">
             <div className="font-semibold">
               {hover.made ? 'Made' : 'Missed'} {hover.points}PT · {distance(hover).toFixed(0)} ft
@@ -72,13 +129,25 @@ export function ShotChart({ shots, color, caption }: { shots: Shot[]; color: str
           </div>
         )}
       </div>
-      <div className="mt-2 flex items-center justify-between text-xs text-muted">
-        <span className="flex items-center gap-3">
-          <span className="flex items-center gap-1">
-            <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: color }} /> Made
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs text-muted">
+        {binned ? (
+          <span className="flex items-center gap-2">
+            Size = attempts · FG%
+            <span className="inline-flex items-center gap-0.5">
+              {[0.15, 0.45, 0.75, 1].map((o) => (
+                <span key={o} className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: color, opacity: o }} />
+              ))}
+            </span>
+            25%→70%
           </span>
-          <span className="flex items-center gap-1">✕ Missed</span>
-        </span>
+        ) : (
+          <span className="flex items-center gap-3">
+            <span className="flex items-center gap-1">
+              <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: color }} /> Made
+            </span>
+            <span className="flex items-center gap-1">✕ Missed</span>
+          </span>
+        )}
         <span>
           {caption ?? 'FG'} {made}/{shots.length}
           {shots.length ? ` · ${((made / shots.length) * 100).toFixed(1)}%` : ''}
