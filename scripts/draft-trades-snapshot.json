@@ -1,0 +1,465 @@
+{
+ "draftYear": 2027,
+ "trades": [
+  {
+   "round": 1,
+   "from": "GB",
+   "to": "DAL",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 1,
+   "from": "IND",
+   "to": "NYJ",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 1,
+   "from": "DAL",
+   "to": "NYJ",
+   "via": [],
+   "conditional": false,
+   "earlierOf": true
+  },
+  {
+   "round": 1,
+   "from": "LAR",
+   "to": "CLE",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 2,
+   "from": "HOU",
+   "to": "ARI",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 3,
+   "from": "LAR",
+   "to": "KC",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 3,
+   "from": "PHI",
+   "to": "MIN",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 3,
+   "from": "DAL",
+   "to": "PIT",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 4,
+   "from": "MIN",
+   "to": "CAR",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 4,
+   "from": "DAL",
+   "to": "GB",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 4,
+   "from": "NYG",
+   "to": "CLE",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 4,
+   "from": "SEA",
+   "to": "CLE",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 4,
+   "from": "PIT",
+   "to": "DAL",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 5,
+   "from": "HOU",
+   "to": "CLE",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 5,
+   "from": "DAL",
+   "to": "PIT",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 5,
+   "from": "PIT",
+   "to": "MIA",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 5,
+   "from": "CAR",
+   "to": "MIN",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 5,
+   "from": "CHI",
+   "to": "NE",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 5,
+   "from": "NE",
+   "to": "PHI",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 5,
+   "from": "NYG",
+   "to": "MIN",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 5,
+   "from": "BAL",
+   "to": "PHI",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 6,
+   "from": "PIT",
+   "to": "DAL",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 6,
+   "from": "SF",
+   "to": "KC",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 6,
+   "from": "NYJ",
+   "to": "MIN",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 6,
+   "from": "GB",
+   "to": "PHI",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 6,
+   "from": "NO",
+   "to": "NE",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 6,
+   "from": "CLE",
+   "to": "HOU",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 6,
+   "from": "PHI",
+   "to": "NYJ",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 6,
+   "from": "LAC",
+   "to": "NO",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 6,
+   "from": "KC",
+   "to": "NYJ",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 6,
+   "from": "PHI",
+   "to": "GB",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 6,
+   "from": "BAL",
+   "to": "SF",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 6,
+   "from": "MIN",
+   "to": "NE",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 6,
+   "from": "ATL",
+   "to": "KC",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 6,
+   "from": "JAX",
+   "to": "NYG",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 6,
+   "from": "DAL",
+   "to": "PIT",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 6,
+   "from": "DAL",
+   "to": "PIT",
+   "via": [],
+   "conditional": true,
+   "earlierOf": false
+  },
+  {
+   "round": 6,
+   "from": "ARI",
+   "to": "HOU",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 7,
+   "from": "LAR",
+   "to": "LAC",
+   "via": [
+    "BAL"
+   ],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 7,
+   "from": "MIA",
+   "to": "PIT",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 7,
+   "from": "NO",
+   "to": "DEN",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 7,
+   "from": "KC",
+   "to": "SF",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 7,
+   "from": "MIN",
+   "to": "NYJ",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 7,
+   "from": "PHI",
+   "to": "MIN",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 7,
+   "from": "LAC",
+   "to": "HOU",
+   "via": [],
+   "conditional": true,
+   "earlierOf": false
+  },
+  {
+   "round": 7,
+   "from": "ATL",
+   "to": "SEA",
+   "via": [],
+   "conditional": true,
+   "earlierOf": false
+  },
+  {
+   "round": 7,
+   "from": "NYG",
+   "to": "MIA",
+   "via": [],
+   "conditional": true,
+   "earlierOf": false
+  },
+  {
+   "round": 7,
+   "from": "HOU",
+   "to": "CLE",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 7,
+   "from": "NYJ",
+   "to": "PHI",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 7,
+   "from": "BAL",
+   "to": "PHI",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 7,
+   "from": "HOU",
+   "to": "DET",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 7,
+   "from": "PHI",
+   "to": "CAR",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 7,
+   "from": "DAL",
+   "to": "PHI",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 7,
+   "from": "LV",
+   "to": "BUF",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 7,
+   "from": "KC",
+   "to": "ATL",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 7,
+   "from": "SF",
+   "to": "ARI",
+   "via": [
+    "HOU"
+   ],
+   "conditional": false,
+   "earlierOf": false
+  },
+  {
+   "round": 7,
+   "from": "PHI",
+   "to": "BAL",
+   "via": [],
+   "conditional": false,
+   "earlierOf": false
+  }
+ ]
+}

@@ -4,11 +4,13 @@
 //              rate, CPOE, PROE, …) with league ranks, plus per-player rates.
 //   por.json – Blazers season analytics from every ESPN box score + play-by-play
 //              (pace, ratings, four factors, usage, clutch, season shot chart).
+//   draft.json – inputs for the live NFL draft order: every team's schedule
+//              (for strength of schedule) and the traded picks for next draft.
 //
 // Each part fails independently: if a source is down, that file records the
 // error and the app shows a notice instead of breaking the build.
 
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { Readable } from 'node:stream'
 import { createGunzip } from 'node:zlib'
 import Papa from 'papaparse'
@@ -22,11 +24,12 @@ const NFL_SEASON = Number(process.env.NFL_SEASON) || (now.getMonth() >= 2 ? now.
 
 async function main() {
   await mkdir(OUT, { recursive: true })
-  const [nyj, por] = await Promise.allSettled([buildJets(), buildBlazers()])
-  for (const [name, r] of [
-    ['nyj', nyj],
-    ['por', por],
-  ]) {
+  // ONLY=draft (comma-separated) rebuilds just those files, handy locally.
+  const only = process.env.ONLY?.split(',')
+  const builders = { nyj: buildJets, por: buildBlazers, draft: buildDraft }
+  const names = Object.keys(builders).filter((n) => !only || only.includes(n))
+  const results = await Promise.allSettled(names.map((n) => builders[n]()))
+  for (const [name, r] of names.map((n, i) => [n, results[i]])) {
     const body = r.status === 'fulfilled' ? r.value : { available: false, error: String(r.reason?.message ?? r.reason) }
     body.updatedAt = new Date().toISOString()
     await writeFile(new URL(`${name}.json`, OUT), JSON.stringify(body))
@@ -635,6 +638,87 @@ function playerAdvanced(p) {
     pm: p.pm, pmPerGame: round(div(p.pm, p.gp), 1),
     games: p.games,
   }
+}
+
+// ------------------------------------------------------------------ NFL draft order inputs
+
+// nflverse / Wikipedia team names → ESPN abbreviations.
+const NFLVERSE_ABBR = { LA: 'LAR', WAS: 'WSH' }
+const WIKI_TEAMS = {
+  Arizona: 'ARI', Atlanta: 'ATL', Baltimore: 'BAL', Buffalo: 'BUF', Carolina: 'CAR', Chicago: 'CHI',
+  Cincinnati: 'CIN', Cleveland: 'CLE', Dallas: 'DAL', Denver: 'DEN', Detroit: 'DET', 'Green Bay': 'GB',
+  Houston: 'HOU', Indianapolis: 'IND', Jacksonville: 'JAX', 'Kansas City': 'KC', 'Las Vegas': 'LV',
+  'LA Chargers': 'LAC', 'LA Rams': 'LAR', Miami: 'MIA', Minnesota: 'MIN', 'New England': 'NE',
+  'New Orleans': 'NO', 'NY Giants': 'NYG', 'NY Jets': 'NYJ', Philadelphia: 'PHI', Pittsburgh: 'PIT',
+  'San Francisco': 'SF', Seattle: 'SEA', 'Tampa Bay': 'TB', Tennessee: 'TEN', Washington: 'WSH',
+}
+const SNAPSHOT = new URL('./draft-trades-snapshot.json', import.meta.url)
+
+async function buildDraft() {
+  const draftYear = NFL_SEASON + 1
+  // Full regular-season schedule → each team's 17 opponents (for strength of schedule).
+  const opponents = {}
+  const ab = (a) => NFLVERSE_ABBR[a] ?? a
+  await streamCsv('https://github.com/nflverse/nfldata/raw/master/data/games.csv', (r) => {
+    if (Number(r.season) !== NFL_SEASON || r.game_type !== 'REG') return
+    const [away, home] = [ab(r.away_team), ab(r.home_team)]
+    ;(opponents[away] ??= []).push(home)
+    ;(opponents[home] ??= []).push(away)
+  })
+  if (Object.keys(opponents).length !== 32) throw new Error(`schedule for ${NFL_SEASON} incomplete`)
+
+  let trades
+  let tradesSource = 'wikipedia'
+  try {
+    trades = await fetchDraftTrades(draftYear)
+    await writeFile(SNAPSHOT, JSON.stringify({ draftYear, trades }, null, 1) + '\n')
+  } catch (e) {
+    console.warn('draft trades: falling back to snapshot –', e.message)
+    const snap = JSON.parse(await readFile(SNAPSHOT, 'utf8'))
+    trades = snap.draftYear === draftYear ? snap.trades : []
+    tradesSource = 'snapshot'
+  }
+  return { available: true, season: NFL_SEASON, draftYear, opponents, trades, tradesSource }
+}
+
+/**
+ * Parse "Trades involving draft picks" from Wikipedia's `{year} NFL draft`
+ * page. Each top-level entry is headed `Original → … → Owner (PD).` in bold.
+ */
+async function fetchDraftTrades(year) {
+  const res = await fetch(`https://en.wikipedia.org/w/index.php?title=${year}_NFL_draft&action=raw`, { headers: UA })
+  if (!res.ok) throw new Error(`${res.status} wikipedia`)
+  const text = await res.text()
+  const start = text.indexOf('==Trades involving draft picks==')
+  if (start < 0) throw new Error('no trades section')
+  const end = text.slice(start + 10).search(/\n==[^=]/)
+  const section = end < 0 ? text.slice(start) : text.slice(start, start + 10 + end)
+  const trades = []
+  let roundNo = 0
+  for (const line of section.split('\n')) {
+    const r = line.match(/^===\s*Round (\d)\s*===/)
+    if (r) roundNo = Number(r[1])
+    if (!roundNo || !line.startsWith('*')) continue
+    const head = line.replace(/\{\{Anchor\|[^}]*\}\}/gi, '').match(/'''([^']+)'''/)
+    if (!head) continue
+    const names = head[1]
+      .replace(/\((PD|D)\)/g, '')
+      .split('→')
+      .map((s) => s.trim().replace(/\.$/, '').trim())
+    const abbrs = names.map((n) => WIKI_TEAMS[n])
+    if (abbrs.length < 2 || abbrs.some((a) => !a)) continue
+    const body = line.slice(line.indexOf("'''", line.indexOf(head[1])) + 3)
+    trades.push({
+      round: roundNo,
+      from: abbrs[0],
+      to: abbrs[abbrs.length - 1],
+      via: abbrs.slice(1, -1),
+      conditional: /conditional/i.test(body.split('in exchange')[0]),
+      earlierOf: /whichever is (earlier|higher|better)/i.test(body),
+    })
+  }
+  if (trades.length < 5) throw new Error(`only ${trades.length} trades parsed`)
+  return trades
 }
 
 main().catch((e) => {
