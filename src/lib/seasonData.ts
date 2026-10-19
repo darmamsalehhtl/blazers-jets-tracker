@@ -176,32 +176,37 @@ export interface BlazersData {
 
 type DataFor<K extends TeamKey> = K extends 'nyj' ? JetsData : BlazersData
 
-const cache = new Map<TeamKey, Promise<unknown>>()
+const cache = new Map<string, Promise<unknown>>()
 
-export function useSeasonData<K extends TeamKey>(key: K) {
-  const [data, setData] = useState<DataFor<K>>()
+/** Fetch one of the JSON files the CI build writes to /data/ (cached per page load). */
+export function useDataFile<T>(name: string) {
+  const [data, setData] = useState<T>()
   const [error, setError] = useState<Error>()
   useEffect(() => {
     let alive = true
-    if (!cache.has(key)) {
+    if (!cache.has(name)) {
       cache.set(
-        key,
-        fetch(`${import.meta.env.BASE_URL}data/${key}.json`, { cache: 'no-cache' }).then((r) => {
+        name,
+        fetch(`${import.meta.env.BASE_URL}data/${name}.json`, { cache: 'no-cache' }).then((r) => {
           if (!r.ok) throw new Error(`Season data not available (${r.status})`)
           return r.json()
         }),
       )
     }
     cache
-      .get(key)!
-      .then((d) => alive && setData(d as DataFor<K>))
+      .get(name)!
+      .then((d) => alive && setData(d as T))
       .catch((e) => {
-        cache.delete(key)
+        cache.delete(name)
         if (alive) setError(e as Error)
       })
     return () => {
       alive = false
     }
-  }, [key])
+  }, [name])
   return { data, error }
+}
+
+export function useSeasonData<K extends TeamKey>(key: K) {
+  return useDataFile<DataFor<K>>(key)
 }
