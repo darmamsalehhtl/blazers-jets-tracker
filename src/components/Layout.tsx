@@ -37,6 +37,14 @@ export function Layout() {
               {TEAMS[k].nickname}
             </NavLink>
           ))}
+          <NavLink
+            to="/draft"
+            className={({ isActive }) =>
+              `rounded-lg px-2.5 py-1.5 text-sm font-medium ${isActive ? 'bg-surface-2 text-text' : 'text-muted hover:text-text'}`
+            }
+          >
+            Draft
+          </NavLink>
           <button
             onClick={toggle}
             aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}

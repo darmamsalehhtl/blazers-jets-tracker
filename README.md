@@ -25,13 +25,15 @@ It works on phone and laptop and can be installed to your home screen.
   - **Jets:** EPA/play, success rate, PROE, CPOE and more, ranked against all 32 teams; an offense-vs-defense EPA chart for every team; the biggest win-probability swings; per-player EPA with league ranks (from [nflverse](https://github.com/nflverse/nflverse-data)).
   - **Blazers:** pace, offensive/defensive/net rating, four factors, clutch record, a season shot chart, and per-player usage, TS%, AST% and REB%, all computed from every box score of the season.
 - **Player pages:** bio, season stats with league ranks, a game-by-game chart, the full game log, every split, career totals, and advanced stats.
+- **Live tab:** every NFL and NBA game in progress, with full stats for whichever one you pick.
+- **Draft tab:** next NFL draft order if the season ended today (record, then strength of schedule), all 7 rounds, with traded picks and the Jets' picks up top.
 - Light/dark mode toggle.
 
 ## How it works
 
 - Static site (Vite + React + TypeScript + Tailwind) hosted on GitHub Pages.
 - Live data comes straight from ESPN's public JSON endpoints in the browser. They send open CORS headers, so no server is needed.
-- `scripts/build-data.mjs` generates the season-analytics JSON. GitHub Actions runs it on every push and every 3 hours, then redeploys.
+- `scripts/build-data.mjs` generates the season-analytics JSON. GitHub Actions runs it on every push and every 3 hours, then redeploys. Draft-order inputs (the season schedule from nflverse and traded picks parsed from Wikipedia) come from the same script; `scripts/draft-trades-snapshot.json` is the fallback if Wikipedia can't be read.
 
 ## Run locally
 
