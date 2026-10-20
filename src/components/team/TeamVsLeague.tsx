@@ -264,7 +264,7 @@ function Chips<T extends string>({ groups, value, onChange }: { groups: readonly
 }
 
 function Grid({ children }: { children: ReactNode }) {
-  return <div className="grid gap-3 lg:grid-cols-2">{children}</div>
+  return <div className="space-y-3">{children}</div>
 }
 
 export function TeamVsLeague({ team }: { team: TeamConfig }) {
