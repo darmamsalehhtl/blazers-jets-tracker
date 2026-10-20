@@ -44,6 +44,16 @@ node scripts/build-data.mjs   # optional: season analytics into public/data/
 npm run dev
 ```
 
+## Planning changes with OpenSpec
+
+The repo uses [OpenSpec](https://github.com/Fission-AI/OpenSpec) for spec-driven changes. Project constraints live in `openspec/config.yaml`; specs in `openspec/specs/`, proposed changes in `openspec/changes/`. In Claude Code:
+
+- `/opsx:propose "idea"` – write a proposal, design and task list for a change
+- `/opsx:apply` – implement the tasks
+- `/opsx:archive` – merge the change into the specs once it's done
+
+`npx @fission-ai/openspec list` shows active changes.
+
 ## Notes
 
 - ESPN's endpoints are unofficial and could change without notice. All of that code lives in `src/lib/espn.ts`.
