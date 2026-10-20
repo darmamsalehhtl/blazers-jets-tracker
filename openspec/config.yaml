@@ -1,0 +1,37 @@
+schema: spec-driven
+
+# Project context (optional)
+# Add only constraints that should guide OpenSpec artifacts and workflows.
+# Include constraints an agent cannot infer by reading the code.
+# Keep general project documentation and discoverable codebase facts out.
+context: |
+  Personal tracker for the New York Jets (NFL) and Portland Trail Blazers (NBA); more teams are unlikely but should stay possible.
+  Must stay free to host with no login: a static site on GitHub Pages, no backend. Live data is fetched from ESPN in the browser;
+  anything heavy is precomputed by scripts/build-data.mjs in GitHub Actions (on push and every 3 hours).
+  Every screen must work on a phone (~390px wide) and a laptop, in both light and dark mode. Design: simple and modern.
+  Live games refresh every 20 seconds. When both teams are live, the Jets take priority.
+  Stats should be as in-depth as possible, including per-player stats.
+  UI text is English.
+  Commits are small and frequent, authored by the repo owner; never add AI/Claude attribution (no Co-Authored-By, no "Generated with").
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always state what is out of scope
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
+
+# Per-operation guidance (optional)
+# Add advisory guidance for how apply and archive work should be conducted.
+# This is separate from artifact rules above.
+# Example:
+#   operations:
+#     apply:
+#       guidance:
+#         - Keep test summaries concise
+#     archive:
+#       guidance:
+#         - Summarize the archive outcome before finishing
