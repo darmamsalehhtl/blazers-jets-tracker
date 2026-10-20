@@ -34,6 +34,8 @@ interface Pt {
   id: string | null
   label: string
   w: number
+  /** League player shown as a (smaller) face because there was room. */
+  face?: boolean
 }
 
 const tick = { fill: 'var(--muted)', fontSize: 11 }
@@ -104,34 +106,56 @@ const Y_AXIS_W = 44
 const X_AXIS_H = 30
 
 /**
- * Name our players, most important first, skipping any name that would
- * overlap one already placed, using the same pixel layout as the chart.
+ * Lay out the chart in the same pixels recharts will use:
+ *  1. name our players, most important first, unless the name would overlap
+ *     another name or one of our faces;
+ *  2. give other players a face too, most important first, wherever it fits
+ *     without touching any face or name already placed (capped, to keep the
+ *     number of images reasonable).
  */
-function placeLabels(
+function layout(
   ours: Pt[],
+  rest: Pt[],
   xd: [number, number],
   yd: [number, number],
   flip: { x?: boolean; y?: boolean },
   w: number,
   h: number,
   r: number,
+  rl: number,
 ) {
+  for (const p of rest) p.face = false
+  if (!w) return
   const plotW = Math.max(100, w - Y_AXIS_W - (r + 4))
   const plotH = Math.max(100, h - (r + 6) - 16 - X_AXIS_H)
   const fx = (v: number) => ((flip.x ? xd[1] - v : v - xd[0]) / (xd[1] - xd[0] || 1)) * plotW
   const fy = (v: number) => (1 - (flip.y ? yd[1] - v : v - yd[0]) / (yd[1] - yd[0] || 1)) * plotH
-  const faces = ours.map((p) => ({ p, x: fx(p.x), y: fy(p.y) }))
-  const placed: { x: number; y: number; half: number }[] = []
+
+  const faces = ours.map((p) => ({ p, x: fx(p.x), y: fy(p.y), r }))
+  const labels: { x: number; y: number; half: number }[] = []
   for (const p of [...ours].sort((a, b) => b.w - a.w)) {
     const name = shortName(p.name)
     const half = (name.length * 6.6) / 2 + 2
     const x = fx(p.x)
     const y = fy(p.y) + r + 9
-    if (placed.some((q) => Math.abs(q.x - x) < q.half + half && Math.abs(q.y - y) < 14)) continue
-    // …or on top of another player's face.
+    if (labels.some((q) => Math.abs(q.x - x) < q.half + half && Math.abs(q.y - y) < 14)) continue
     if (faces.some((f) => f.p !== p && Math.abs(f.x - x) < half + r && Math.abs(f.y - y) < r + 6)) continue
-    placed.push({ x, y, half })
+    labels.push({ x, y, half })
     p.label = name
+  }
+
+  const cap = w < 500 ? 14 : 36
+  let n = 0
+  for (const p of [...rest].sort((a, b) => b.w - a.w)) {
+    if (n >= cap) break
+    if (!p.id) continue
+    const x = fx(p.x)
+    const y = fy(p.y)
+    if (faces.some((f) => Math.hypot(f.x - x, f.y - y) < f.r + rl + 4)) continue
+    if (labels.some((q) => Math.abs(q.x - x) < q.half + rl && Math.abs(q.y - y) < rl + 7)) continue
+    faces.push({ p, x, y, r: rl })
+    p.face = true
+    n++
   }
 }
 
@@ -170,7 +194,9 @@ export function LeagueScatter<R extends { id: string | null; name: string; team:
   if (pts.length < 5) return null
   const xs = niceScale(pts.map((p) => p.x), plot.x.int)
   const ys = niceScale(pts.map((p) => p.y), plot.y.int)
-  placeLabels(ours, xs.domain, ys.domain, { x: plot.x.lowBetter, y: plot.y.lowBetter }, size.w, size.h, r)
+  const rl = Math.round(r * 0.72)
+  layout(ours, rest, xs.domain, ys.domain, { x: plot.x.lowBetter, y: plot.y.lowBetter }, size.w, size.h, r, rl)
+  const restFaces = rest.filter((p) => p.face).sort((a, b) => a.w - b.w)
 
   const mx = median(pts.map((p) => p.x))
   const my = median(pts.map((p) => p.y))
@@ -249,6 +275,7 @@ export function LeagueScatter<R extends { id: string | null; name: string; team:
               }}
             />
             <Scatter data={rest} fill="var(--muted)" fillOpacity={0.35} isAnimationActive={false} shape={<Dot r={4} />} />
+            <Scatter data={restFaces} isAnimationActive={false} shape={<Face color="var(--border)" league={team.league} uid={`${uid}l`} r={rl} muted />} />
             <Scatter
               data={ours}
               isAnimationActive={false}
@@ -286,6 +313,7 @@ function Face({
   league,
   uid,
   r,
+  muted,
 }: {
   cx?: number
   cy?: number
@@ -294,13 +322,15 @@ function Face({
   league: string
   uid: string
   r: number
+  /** Other teams' players: thinner ring, slightly faded. */
+  muted?: boolean
 }) {
   const [failed, setFailed] = useState(false)
   if (cx === undefined || cy === undefined || !payload) return null
   const clip = `${uid}-${payload.id ?? payload.name.replace(/\W/g, '')}`
   return (
-    <g>
-      <circle cx={cx} cy={cy} r={r + 2.5} fill={color} />
+    <g opacity={muted ? 0.85 : 1}>
+      <circle cx={cx} cy={cy} r={r + (muted ? 1.5 : 2.5)} fill={color} />
       <circle cx={cx} cy={cy} r={r} fill="var(--surface-2)" />
       {payload.id && !failed ? (
         <>
