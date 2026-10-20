@@ -686,24 +686,32 @@ async function espnByAthlete(sport, league, season, sort) {
   return { rows, season: ret }
 }
 
+/** Team abbreviation → primary colour, for the rings around league players' faces. */
+async function teamColors(sport, league) {
+  const d = await getJSON(`https://site.api.espn.com/apis/site/v2/sports/${sport}/${league}/teams`)
+  const teams = d.sports?.[0]?.leagues?.[0]?.teams ?? []
+  return Object.fromEntries(teams.filter((x) => x.team.color).map(({ team }) => [team.abbreviation, `#${team.color}`]))
+}
+
 async function buildNflLeague(input) {
   if (!input) throw new Error('no play-by-play')
   const { passers, receivers, rushers, idMap, weeks } = input
   // Minimum volume scales with the season so early weeks still have plots.
   const min = { dropbacks: 12 * weeks, targets: 2.5 * weeks, carries: 5 * weeks, tackles: 1.5 * weeks }
   const r3 = (v) => round(v, 3)
+  const espnAbbr = (a) => NFLVERSE_ABBR[a] ?? a
 
   const passing = [...passers.entries()]
     .filter(([, a]) => a.db >= min.dropbacks)
     .map(([id, a]) => ({
-      id: idMap.get(id) ?? null, name: a.name, team: a.team, db: a.db,
+      id: idMap.get(id) ?? null, name: a.name, team: espnAbbr(a.team), db: a.db,
       epa: r3(div(a.epa, a.db)), totalEpa: round(a.epa, 1), success: r3(div(a.success, a.db)),
       cpoe: round(div(a.cpoe, a.cpoeN), 2), adot: round(div(a.air, a.att), 2), sackRate: r3(div(a.sacks, a.db)), intRate: r3(div(a.ints, a.att)),
     }))
   const receiving = [...receivers.entries()]
     .filter(([, a]) => a.tgt >= min.targets)
     .map(([id, a]) => ({
-      id: idMap.get(id) ?? null, name: a.name, team: a.team, tgt: a.tgt, rec: a.rec, yds: a.yds,
+      id: idMap.get(id) ?? null, name: a.name, team: espnAbbr(a.team), tgt: a.tgt, rec: a.rec, yds: a.yds,
       tgtPerGame: round(a.tgt / weeks, 2),
       epa: r3(div(a.epa, a.tgt)), totalEpa: round(a.epa, 1), success: r3(div(a.success, a.tgt)), catchRate: r3(div(a.rec, a.tgt)),
       adot: round(div(a.air, a.tgt), 2), yac: round(div(a.yac, a.rec), 2), ypt: round(div(a.yds, a.tgt), 2),
@@ -711,7 +719,7 @@ async function buildNflLeague(input) {
   const rushing = [...rushers.entries()]
     .filter(([, a]) => a.car >= min.carries)
     .map(([id, a]) => ({
-      id: idMap.get(id) ?? null, name: a.name, team: a.team, car: a.car, yds: a.yds,
+      id: idMap.get(id) ?? null, name: a.name, team: espnAbbr(a.team), car: a.car, yds: a.yds,
       epa: r3(div(a.epa, a.car)), totalEpa: round(a.epa, 1), success: r3(div(a.success, a.car)), ypc: round(div(a.yds, a.car), 2),
       explosive: r3(div(a.explosive, a.car)),
     }))
@@ -730,7 +738,8 @@ async function buildNflLeague(input) {
     }))
     .filter((r) => r.tackles >= min.tackles || r.sacks >= weeks / 3 || r.pd >= weeks / 2)
 
-  return { available: true, season: NFL_SEASON, weeks, min, passing, receiving, rushing, defense }
+  const colors = await teamColors('football', 'nfl')
+  return { available: true, season: NFL_SEASON, weeks, min, colors, passing, receiving, rushing, defense }
 }
 
 async function buildNbaLeague() {
@@ -773,6 +782,7 @@ async function buildNbaLeague() {
     seasonLabel: season?.displayName ?? String(current),
     isCurrent: (season?.year ?? current) === current,
     minGames: Math.ceil(Math.max(1, 0.3 * maxGp)),
+    colors: await teamColors('basketball', 'nba'),
     players,
   }
 }

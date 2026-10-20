@@ -57,6 +57,8 @@ export interface NflLeague {
   season: number
   weeks: number
   min: { dropbacks: number; targets: number; carries: number; tackles: number }
+  /** Team abbreviation → '#hex' */
+  colors: Record<string, string>
   passing: NflPasserRow[]
   receiving: NflReceiverRow[]
   rushing: NflRusherRow[]
@@ -99,5 +101,6 @@ export interface NbaLeague {
   seasonLabel: string
   isCurrent: boolean
   minGames: number
+  colors: Record<string, string>
   players: NbaPlayerRow[]
 }
