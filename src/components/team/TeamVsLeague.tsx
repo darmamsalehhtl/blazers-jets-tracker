@@ -291,10 +291,10 @@ function NflVsLeague({ team }: { team: TeamConfig }) {
         {timeAgo(new Date(data.updatedAt))}
       </p>
       <Grid>
-        {g === 'qb' && QB.map((p) => <LeagueScatter key={p.id} weight={(r) => r.db} plot={p} rows={data.passing} team={team} />)}
-        {g === 'wr' && WR.map((p) => <LeagueScatter key={p.id} weight={(r) => r.tgt} plot={p} rows={data.receiving} team={team} />)}
-        {g === 'rb' && RB.map((p) => <LeagueScatter key={p.id} weight={(r) => r.car} plot={p} rows={data.rushing} team={team} />)}
-        {g === 'def' && DEF.map((p) => <LeagueScatter key={p.id} weight={(r) => r.tackles + 5 * r.sacks} plot={p} rows={data.defense} team={team} />)}
+        {g === 'qb' && QB.map((p) => <LeagueScatter key={p.id} colors={data.colors} weight={(r) => r.db} plot={p} rows={data.passing} team={team} />)}
+        {g === 'wr' && WR.map((p) => <LeagueScatter key={p.id} colors={data.colors} weight={(r) => r.tgt} plot={p} rows={data.receiving} team={team} />)}
+        {g === 'rb' && RB.map((p) => <LeagueScatter key={p.id} colors={data.colors} weight={(r) => r.car} plot={p} rows={data.rushing} team={team} />)}
+        {g === 'def' && DEF.map((p) => <LeagueScatter key={p.id} colors={data.colors} weight={(r) => r.tackles + 5 * r.sacks} plot={p} rows={data.defense} team={team} />)}
       </Grid>
     </div>
   )
@@ -315,7 +315,7 @@ function NbaVsLeague({ team }: { team: TeamConfig }) {
       </p>
       <Grid>
         {NBA[g].map((p) => (
-          <LeagueScatter key={p.id} plot={p} rows={data.players} team={team} weight={(r) => r.gp * (r.mpg ?? 0)} />
+          <LeagueScatter key={p.id} colors={data.colors} plot={p} rows={data.players} team={team} weight={(r) => r.gp * (r.mpg ?? 0)} />
         ))}
       </Grid>
     </div>

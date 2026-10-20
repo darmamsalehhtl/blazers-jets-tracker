@@ -169,12 +169,15 @@ export function LeagueScatter<R extends { id: string | null; name: string; team:
   rows,
   team,
   weight,
+  colors,
 }: {
   plot: PlotDef<R>
   rows: R[]
   team: TeamConfig
   /** Who gets a name label first when labels would collide (e.g. minutes played). */
   weight: (r: R) => number
+  /** Team abbreviation → colour, for the ring around other players' faces. */
+  colors?: Record<string, string>
 }) {
   const nav = useNavigate()
   const [box, size] = useSize()
@@ -275,7 +278,7 @@ export function LeagueScatter<R extends { id: string | null; name: string; team:
               }}
             />
             <Scatter data={rest} fill="var(--muted)" fillOpacity={0.35} isAnimationActive={false} shape={<Dot r={4} />} />
-            <Scatter data={restFaces} isAnimationActive={false} shape={<Face color="var(--border)" league={team.league} uid={`${uid}l`} r={rl} muted />} />
+            <Scatter data={restFaces} isAnimationActive={false} shape={<Face color={(p) => colors?.[p.team] ?? 'var(--border)'} league={team.league} uid={`${uid}l`} r={rl} muted />} />
             <Scatter
               data={ours}
               isAnimationActive={false}
@@ -318,7 +321,8 @@ function Face({
   cx?: number
   cy?: number
   payload?: Pt
-  color: string
+  /** Ring colour, fixed or per player (their team's colour). */
+  color: string | ((p: Pt) => string)
   league: string
   uid: string
   r: number
@@ -329,8 +333,8 @@ function Face({
   if (cx === undefined || cy === undefined || !payload) return null
   const clip = `${uid}-${payload.id ?? payload.name.replace(/\W/g, '')}`
   return (
-    <g opacity={muted ? 0.85 : 1}>
-      <circle cx={cx} cy={cy} r={r + (muted ? 1.5 : 2.5)} fill={color} />
+    <g opacity={muted ? 0.9 : 1}>
+      <circle cx={cx} cy={cy} r={r + (muted ? 2 : 2.5)} fill={typeof color === 'function' ? color(payload) : color} />
       <circle cx={cx} cy={cy} r={r} fill="var(--surface-2)" />
       {payload.id && !failed ? (
         <>
