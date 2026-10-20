@@ -25,6 +25,7 @@ It works on phone and laptop and can be installed to your home screen.
   - **Jets:** EPA/play, success rate, PROE, CPOE and more, ranked against all 32 teams; an offense-vs-defense EPA chart for every team; the biggest win-probability swings; per-player EPA with league ranks (from [nflverse](https://github.com/nflverse/nflverse-data)).
   - **Blazers:** pace, offensive/defensive/net rating, four factors, clutch record, a season shot chart, and per-player usage, TS%, AST% and REB%, all computed from every box score of the season.
 - **Player pages:** bio, season stats with league ranks, a game-by-game chart, the full game log, every split, career totals, and advanced stats.
+- **vs League tab** (on each team page): 25 scatter plots where every dot is a player in the league and your team's players are highlighted, e.g. QB EPA vs CPOE, receiver depth vs YAC, NBA scoring volume vs true shooting, three-point volume vs accuracy, steals vs blocks.
 - **Live tab:** every NFL and NBA game in progress, with full stats for whichever one you pick.
 - **Draft tab:** next NFL draft order if the season ended today (record, then strength of schedule), all 7 rounds, with traded picks and the Jets' picks up top.
 - Light/dark mode toggle.

@@ -7,6 +7,7 @@ import { TeamRoster } from '../components/team/TeamRoster'
 import { TeamSchedule } from '../components/team/TeamSchedule'
 import { TeamStandings } from '../components/team/TeamStandings'
 import { TeamStats } from '../components/team/TeamStats'
+import { TeamVsLeague } from '../components/team/TeamVsLeague'
 import { ErrorBox, Logo, Spinner, Tabs } from '../components/ui'
 import { urls, type ScheduleResponse } from '../lib/espn'
 import { isTeamKey, TEAMS } from '../lib/teams'
@@ -18,6 +19,7 @@ const TABS = [
   { id: 'stats', label: 'Team stats' },
   { id: 'advanced', label: 'Advanced' },
   { id: 'players', label: 'Player stats' },
+  { id: 'league', label: 'vs League' },
   { id: 'roster', label: 'Roster' },
   { id: 'standings', label: 'Standings' },
   { id: 'news', label: 'News' },
@@ -68,6 +70,7 @@ export default function TeamPage() {
           {tab === 'stats' && <TeamStats team={team} schedule={s} />}
           {tab === 'advanced' && <TeamAdvanced team={team} />}
           {tab === 'players' && <TeamPlayers team={team} />}
+          {tab === 'league' && <TeamVsLeague team={team} />}
           {tab === 'roster' && <TeamRoster team={team} />}
           {tab === 'standings' && <TeamStandings team={team} season={s.season.year} />}
           {tab === 'news' && <TeamNews team={team} />}
