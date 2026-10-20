@@ -4,6 +4,8 @@
 //              rate, CPOE, PROE, …) with league ranks, plus per-player rates.
 //   por.json – Blazers season analytics from every ESPN box score + play-by-play
 //              (pace, ratings, four factors, usage, clutch, season shot chart).
+//   nfl-league.json / nba-league.json – every qualified player in the league
+//              (efficiency + volume) for the "vs League" scatter plots.
 //   draft.json – inputs for the live NFL draft order: every team's schedule
 //              (for strength of schedule) and the traded picks for next draft.
 //
@@ -26,7 +28,19 @@ async function main() {
   await mkdir(OUT, { recursive: true })
   // ONLY=draft (comma-separated) rebuilds just those files, handy locally.
   const only = process.env.ONLY?.split(',')
-  const builders = { nyj: buildJets, por: buildBlazers, draft: buildDraft }
+  // nfl-league reuses the Jets play-by-play pass, so the file is only read once.
+  let jets
+  const once = () => (jets ??= buildJets())
+  const builders = {
+    nyj: async () => {
+      const { leagueInput, ...body } = await once()
+      return body
+    },
+    por: buildBlazers,
+    'nfl-league': async () => buildNflLeague((await once()).leagueInput),
+    'nba-league': buildNbaLeague,
+    draft: buildDraft,
+  }
   const names = Object.keys(builders).filter((n) => !only || only.includes(n))
   const results = await Promise.allSettled(names.map((n) => builders[n]()))
   for (const [name, r] of names.map((n, i) => [n, results[i]])) {
@@ -210,8 +224,10 @@ async function buildJets(team = 'NYJ') {
   const byQuarter = { off: {}, def: {} }
   const get = (m, k, init) => (m.has(k) ? m.get(k) : m.set(k, init()).get(k))
 
+  let weeks = 0
   await streamCsv(`${NFLVERSE}/pbp/play_by_play_${NFL_SEASON}.csv.gz`, (p) => {
     if (p.season_type !== 'REG' && p.season_type !== 'POST') return
+    if (p.season_type === 'REG') weeks = Math.max(weeks, num(p.week) ?? 0)
     const isScrimmage = p.play_type === 'pass' || p.play_type === 'run'
     const wpa = num(p.wpa)
 
@@ -282,6 +298,7 @@ async function buildJets(team = 'NYJ') {
     byQuarter: Object.fromEntries(['off', 'def'].map((s) => [s, Object.fromEntries(Object.entries(byQuarter[s]).map(([k, v]) => [k, summarize(v)]))])),
     bigPlays: bigPlays.sort((a, b) => Math.abs(b.wpa) - Math.abs(a.wpa)).slice(0, 20),
     players,
+    leagueInput: { passers, receivers, rushers, idMap, weeks },
   }
 }
 
@@ -637,6 +654,126 @@ function playerAdvanced(p) {
     pts36: per36(p.pts), reb36: per36(p.reb), ast36: per36(p.ast), stl36: per36(p.stl), blk36: per36(p.blk), tov36: per36(p.tov),
     pm: p.pm, pmPerGame: round(div(p.pm, p.gp), 1),
     games: p.games,
+  }
+}
+
+// ------------------------------------------------------------------ League-wide players (scatter plots)
+
+const ESPN_STATS = 'https://site.web.api.espn.com/apis/common/v3/sports'
+
+/** Every athlete on ESPN's league stats table, flattened to { name: number } per athlete. */
+async function espnByAthlete(sport, league, season, sort) {
+  const rows = []
+  let ret
+  for (let page = 1; ; page++) {
+    const d = await getJSON(`${ESPN_STATS}/${sport}/${league}/statistics/byathlete?season=${season}&seasontype=2&limit=1000&page=${page}&sort=${sort}:desc`)
+    ret = d.requestedSeason
+    const names = Object.fromEntries((d.categories ?? []).map((c) => [c.name, c.names]))
+    for (const a of d.athletes ?? []) {
+      const stats = {}
+      for (const c of a.categories) {
+        const keys = names[c.name] ?? []
+        c.totals?.forEach((v, i) => {
+          const n = Number(String(v).replace(/,/g, ''))
+          if (keys[i] && Number.isFinite(n)) stats[`${c.name}.${keys[i]}`] = n
+        })
+      }
+      const ath = a.athlete
+      rows.push({ id: ath.id, name: ath.displayName, team: ath.teamShortName ?? '', pos: ath.position?.abbreviation ?? '', stats })
+    }
+    if (page >= (d.pagination?.pages ?? 1)) break
+  }
+  return { rows, season: ret }
+}
+
+async function buildNflLeague(input) {
+  if (!input) throw new Error('no play-by-play')
+  const { passers, receivers, rushers, idMap, weeks } = input
+  // Minimum volume scales with the season so early weeks still have plots.
+  const min = { dropbacks: 12 * weeks, targets: 2.5 * weeks, carries: 5 * weeks, tackles: 1.5 * weeks }
+  const r3 = (v) => round(v, 3)
+
+  const passing = [...passers.entries()]
+    .filter(([, a]) => a.db >= min.dropbacks)
+    .map(([id, a]) => ({
+      id: idMap.get(id) ?? null, name: a.name, team: a.team, db: a.db,
+      epa: r3(div(a.epa, a.db)), totalEpa: round(a.epa, 1), success: r3(div(a.success, a.db)),
+      cpoe: round(div(a.cpoe, a.cpoeN), 2), adot: round(div(a.air, a.att), 2), sackRate: r3(div(a.sacks, a.db)), intRate: r3(div(a.ints, a.att)),
+    }))
+  const receiving = [...receivers.entries()]
+    .filter(([, a]) => a.tgt >= min.targets)
+    .map(([id, a]) => ({
+      id: idMap.get(id) ?? null, name: a.name, team: a.team, tgt: a.tgt, rec: a.rec, yds: a.yds,
+      tgtPerGame: round(a.tgt / weeks, 2),
+      epa: r3(div(a.epa, a.tgt)), totalEpa: round(a.epa, 1), success: r3(div(a.success, a.tgt)), catchRate: r3(div(a.rec, a.tgt)),
+      adot: round(div(a.air, a.tgt), 2), yac: round(div(a.yac, a.rec), 2), ypt: round(div(a.yds, a.tgt), 2),
+    }))
+  const rushing = [...rushers.entries()]
+    .filter(([, a]) => a.car >= min.carries)
+    .map(([id, a]) => ({
+      id: idMap.get(id) ?? null, name: a.name, team: a.team, car: a.car, yds: a.yds,
+      epa: r3(div(a.epa, a.car)), totalEpa: round(a.epa, 1), success: r3(div(a.success, a.car)), ypc: round(div(a.yds, a.car), 2),
+      explosive: r3(div(a.explosive, a.car)),
+    }))
+
+  const def = await espnByAthlete('football', 'nfl', NFL_SEASON, 'defensive.totalTackles')
+  const defense = def.rows
+    .map(({ stats: s, ...r }) => ({
+      ...r,
+      gp: s['general.gamesPlayed'] ?? 0,
+      tackles: s['defensive.totalTackles'] ?? 0,
+      sacks: s['defensive.sacks'] ?? 0,
+      tfl: s['defensive.tacklesForLoss'] ?? 0,
+      pd: s['defensive.passesDefended'] ?? 0,
+      ints: s['defensiveinterceptions.interceptions'] ?? 0,
+      ff: s['general.fumblesForced'] ?? 0,
+    }))
+    .filter((r) => r.tackles >= min.tackles || r.sacks >= weeks / 3 || r.pd >= weeks / 2)
+
+  return { available: true, season: NFL_SEASON, weeks, min, passing, receiving, rushing, defense }
+}
+
+async function buildNbaLeague() {
+  const sched = await getJSON(`${ESPN}/scoreboard`)
+  const current = sched.leagues?.[0]?.season?.year ?? now.getFullYear() + (now.getMonth() >= 8 ? 1 : 0)
+  // ESPN answers with last season until this one has games; label whatever it returned.
+  const { rows, season } = await espnByAthlete('basketball', 'nba', current, 'offensive.avgPoints')
+  const maxGp = Math.max(1, ...rows.map((r) => r.stats['general.gamesPlayed'] ?? 0))
+  const players = rows
+    .map(({ stats: s, ...r }) => {
+      const gp = s['general.gamesPlayed'] ?? 0
+      const min = s['general.minutes'] ?? 0
+      const pts = s['offensive.points'] ?? 0
+      const fga = s['offensive.fieldGoalsAttempted'] ?? 0
+      const fgm = s['offensive.fieldGoalsMade'] ?? 0
+      const tpa = s['offensive.threePointFieldGoalsAttempted'] ?? 0
+      const tpm = s['offensive.threePointFieldGoalsMade'] ?? 0
+      const fta = s['offensive.freeThrowsAttempted'] ?? 0
+      const ast = s['offensive.assists'] ?? 0
+      const tov = s['offensive.turnovers'] ?? 0
+      const reb = s['general.rebounds'] ?? 0
+      const stl = s['defensive.steals'] ?? 0
+      const blk = s['defensive.blocks'] ?? 0
+      const per36 = (v) => round(div(v * 36, min), 1)
+      return {
+        ...r, gp, mpg: round(div(min, gp), 1),
+        ppg: round(div(pts, gp), 1), rpg: round(div(reb, gp), 1), apg: round(div(ast, gp), 1),
+        spg: round(div(stl, gp), 1), bpg: round(div(blk, gp), 1), tpg: round(div(tov, gp), 1),
+        tpaPg: round(div(tpa, gp), 1), fgaPg: round(div(fga, gp), 1),
+        ts: round(div(pts, 2 * (fga + 0.44 * fta))), efg: round(div(fgm + 0.5 * tpm, fga)),
+        fgPct: round(div(fgm, fga)), tpPct: round(div(tpm, tpa)), ftPct: round(s['offensive.freeThrowPct'] / 100),
+        tpaRate: round(div(tpa, fga)), ftr: round(div(fta, fga)), astTo: round(div(ast, tov), 2),
+        pts36: per36(pts), reb36: per36(reb), ast36: per36(ast), stl36: per36(stl), blk36: per36(blk), fga36: per36(fga),
+      }
+    })
+    .filter((r) => r.gp >= Math.max(1, 0.3 * maxGp) && (r.mpg ?? 0) >= 12)
+  return {
+    available: true,
+    season: season?.year ?? current,
+    seasonLabel: season?.displayName ?? String(current),
+    isCurrent: (season?.year ?? current) === current,
+    minGames: Math.ceil(Math.max(1, 0.3 * maxGp)),
+    players,
   }
 }
 
