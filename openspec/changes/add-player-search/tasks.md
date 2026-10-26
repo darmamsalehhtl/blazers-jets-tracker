@@ -38,7 +38,7 @@
 
 ## 5. Integration check
 
-- [ ] 5.1 Run the full `node scripts/build-data.mjs` and `npm run build`. Then, on the Jets page search "mahomes" and on the Blazers page "lebron", open each, check the stats and the MVP card, go back, and repeat once at 390px dark mode with no console errors. Push, and confirm that the Deploy workflow passes and that both `players-*.json` files are served on the live site.
+- [x] 5.1 Run the full `node scripts/build-data.mjs` and `npm run build`. Then, on the Jets page search "mahomes" and on the Blazers page "lebron", open each, check the stats and the MVP card, go back, and repeat once at 390px dark mode with no console errors. Push, and confirm that the Deploy workflow passes and that both `players-*.json` files are served on the live site.
 
 ## Workflow follow-up
 
