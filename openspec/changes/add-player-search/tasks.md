@@ -2,8 +2,8 @@
 
 ## 1. Full MVP standings in the build
 
-- [ ] 1.1 Make the MVP builders also return `standings` (ESPN id → rank, score, gap, atRisk) for the whole pool and the per-player volumes needed for reasons (NFL dropbacks/touches by ESPN id, NBA games/team games/minutes). Memoize the MVP computation so other builders can reuse it. Verify that `ONLY=mvp node scripts/build-data.mjs` writes an identical `mvp.json` apart from `updatedAt` (diff against a copy made beforehand), and that the logged standings count equals `poolSize`.
-- [ ] 1.2 Commit ("Expose full MVP standings from the data build").
+- [x] 1.1 Make the MVP builders also return `standings` (ESPN id → rank, score, gap, atRisk) for the whole pool and the per-player volumes needed for reasons (NFL dropbacks/touches by ESPN id, NBA games/team games/minutes). Memoize the MVP computation so other builders can reuse it. Verify that `ONLY=mvp node scripts/build-data.mjs` writes an identical `mvp.json` apart from `updatedAt` (diff against a copy made beforehand), and that the logged standings count equals `poolSize`.
+- [x] 1.2 Commit ("Expose full MVP standings from the data build").
 
 ## 2. Player index
 

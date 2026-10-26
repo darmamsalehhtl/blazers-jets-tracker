@@ -35,6 +35,9 @@ async function main() {
   // nfl-league reuses the Jets play-by-play pass, so the file is only read once.
   let jets
   const once = () => (jets ??= buildJets())
+  // The MVP ranking is computed once and shared by mvp.json and the player search index.
+  let mvpRun
+  const mvpOnce = () => (mvpRun ??= buildMvp(async () => (await once()).leagueInput))
   const builders = {
     nyj: async () => {
       const { leagueInput, ...body } = await once()
@@ -43,7 +46,7 @@ async function main() {
     por: buildBlazers,
     'nfl-league': async () => buildNflLeague((await once()).leagueInput),
     'nba-league': buildNbaLeague,
-    mvp: async () => buildMvp(async () => (await once()).leagueInput),
+    mvp: async () => (await mvpOnce()).json,
     draft: buildDraft,
   }
   const names = Object.keys(builders).filter((n) => !only || only.includes(n))
@@ -849,11 +852,23 @@ const MVP_WEIGHTS = {
 const MVP_TOP = 10
 
 /** Each league builds on its own; a failure becomes { available: false, error } for that league only. */
+/**
+ * Returns `json` (written as mvp.json) and `extra`: per league the full standings
+ * and per-player volumes the player search index needs, or the league's error.
+ */
 async function buildMvp(nflInput) {
   const [nfl, nba] = await Promise.allSettled([buildMvpNfl(await nflInput().catch(() => null)), buildMvpNba()])
-  const wrap = (r) => (r.status === 'fulfilled' ? r.value : { available: false, error: String(r.reason?.message ?? r.reason) })
-  return { available: true, nfl: wrap(nfl), nba: wrap(nba) }
+  const wrap = (r) => {
+    if (r.status !== 'fulfilled') return { available: false, error: String(r.reason?.message ?? r.reason) }
+    const { extra, ...league } = r.value
+    return league
+  }
+  const extra = (r) => (r.status === 'fulfilled' ? r.value.extra : { error: String(r.reason?.message ?? r.reason) })
+  return { json: { available: true, nfl: wrap(nfl), nba: wrap(nba) }, extra: { nfl: extra(nfl), nba: extra(nba) } }
 }
+
+/** Rank, score, gap (and 65-game risk) for one ranked player. */
+const standingOf = (c, n) => ({ rank: c.rank, of: n, score: c.score, gap: c.gap, ...(c.atRisk ? { atRisk: true } : {}) })
 
 function zScorer(values) {
   const v = values.filter((x) => Number.isFinite(x))
@@ -982,7 +997,38 @@ async function buildMvpNfl(input) {
     min: { dropbacks: 12 * weeks, touches: 8 * weeks },
     candidates: out.slice(0, MVP_TOP),
     ours: oursSummary(out, 'NYJ'),
+    extra: {
+      min: { dropbacks: 12 * weeks, touches: 8 * weeks },
+      // Ranked players by ESPN id, plus by "name|team" for those nflverse couldn't map.
+      standings: new Map(out.filter((c) => c.id).map((c) => [c.id, standingOf(c, out.length)])),
+      byName: new Map(out.map((c) => [`${normName(c.name)}|${c.team}`, standingOf(c, out.length)])),
+      volumes: nflVolumes(input),
+    },
   }
+}
+
+/** Dropbacks, touches and games for every player with offensive plays, by ESPN id and by "name|team". */
+function nflVolumes({ passers, rushers, receivers, mvpStats, idMap, fullNames }) {
+  const byId = new Map()
+  const byName = new Map()
+  for (const [id, s] of mvpStats) {
+    const v = { dropbacks: passers.get(id)?.db ?? 0, touches: (rushers.get(id)?.car ?? 0) + (receivers.get(id)?.tgt ?? 0), games: s.games.size }
+    const espn = idMap.get(id)
+    if (espn) byId.set(espn, v)
+    if (fullNames.get(id)) byName.set(`${normName(fullNames.get(id))}|${NFLVERSE_ABBR[s.team] ?? s.team}`, v)
+  }
+  return { byId, byName }
+}
+
+/** Lowercase, accents and punctuation stripped: "Ja'Marr Chase Jr." → "jamarr chase jr". */
+function normName(n) {
+  return n
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[.'’-]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 async function buildMvpNba() {
@@ -1080,6 +1126,17 @@ async function buildMvpNba() {
     lgTs: round(lgTs),
     candidates: out.slice(0, MVP_TOP),
     ours: oursSummary(out, 'POR'),
+    extra: {
+      standings: new Map(out.map((c) => [c.id, standingOf(c, out.length)])),
+      // Every player with stats this season (not only the pool), for not-ranked reasons.
+      volumes: new Map(
+        rows.map(({ id, team, stats: s }) => {
+          const gp = s['general.gamesPlayed'] ?? 0
+          const rec = records[team]
+          return [id, { gp, teamGames: rec ? rec.w + rec.l : 0, mpg: gp ? round((s['general.minutes'] ?? 0) / gp, 1) : 0 }]
+        }),
+      ),
+    },
   }
 }
 
