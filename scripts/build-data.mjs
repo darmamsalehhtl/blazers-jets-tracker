@@ -6,6 +6,8 @@
 //              (pace, ratings, four factors, usage, clutch, season shot chart).
 //   nfl-league.json / nba-league.json – every qualified player in the league
 //              (efficiency + volume) for the "vs League" scatter plots.
+//   mvp.json – "if the season ended today" NFL and NBA MVP races (top 10 each,
+//              plus where the best Jets/Blazers player ranks).
 //   draft.json – inputs for the live NFL draft order: every team's schedule
 //              (for strength of schedule) and the traded picks for next draft.
 //
@@ -39,6 +41,7 @@ async function main() {
     por: buildBlazers,
     'nfl-league': async () => buildNflLeague((await once()).leagueInput),
     'nba-league': buildNbaLeague,
+    mvp: async () => buildMvp(async () => (await once()).leagueInput),
     draft: buildDraft,
   }
   const names = Object.keys(builders).filter((n) => !only || only.includes(n))
@@ -281,9 +284,11 @@ async function buildJets(team = 'NYJ') {
   // Map nflverse player ids → ESPN ids.
   const idMap = new Map()
   const positions = new Map()
+  const fullNames = new Map()
   await streamCsv(`${NFLVERSE}/players/players.csv`, (r) => {
     if (r.gsis_id && r.espn_id && r.espn_id !== 'NA') idMap.set(r.gsis_id, r.espn_id)
     if (r.gsis_id && r.position && r.position !== 'NA') positions.set(r.gsis_id, r.position)
+    if (r.gsis_id && r.display_name && r.display_name !== 'NA') fullNames.set(r.gsis_id, r.display_name)
   })
 
   const players = buildPlayerTables(passers, receivers, rushers, idMap, team)
@@ -304,7 +309,7 @@ async function buildJets(team = 'NYJ') {
     byQuarter: Object.fromEntries(['off', 'def'].map((s) => [s, Object.fromEntries(Object.entries(byQuarter[s]).map(([k, v]) => [k, summarize(v)]))])),
     bigPlays: bigPlays.sort((a, b) => Math.abs(b.wpa) - Math.abs(a.wpa)).slice(0, 20),
     players,
-    leagueInput: { passers, receivers, rushers, idMap, weeks, mvpStats, positions },
+    leagueInput: { passers, receivers, rushers, idMap, weeks, mvpStats, positions, fullNames },
   }
 }
 
@@ -822,6 +827,230 @@ async function buildNbaLeague() {
     minGames: Math.ceil(Math.max(1, 0.3 * maxGp)),
     colors: await teamColors('basketball', 'nba'),
     players,
+  }
+}
+
+// ------------------------------------------------------------------ MVP race
+
+// Weights live here so they're easy to tune. Each input is z-scored against the
+// candidate pool; display score = 50 + 15 × weighted sum (clamped 0–100).
+const MVP_WEIGHTS = {
+  nfl: { epa: 0.5, prod: 0.2, win: 0.3, nonQb: -0.8 },
+  nba: { prod: 0.55, eff: 0.2, win: 0.25 },
+}
+const MVP_TOP = 10
+
+/** Each league builds on its own; a failure becomes { available: false, error } for that league only. */
+async function buildMvp(nflInput) {
+  const [nfl, nba] = await Promise.allSettled([buildMvpNfl(await nflInput().catch(() => null)), buildMvpNba()])
+  const wrap = (r) => (r.status === 'fulfilled' ? r.value : { available: false, error: String(r.reason?.message ?? r.reason) })
+  return { available: true, nfl: wrap(nfl), nba: wrap(nba) }
+}
+
+function zScorer(values) {
+  const v = values.filter((x) => Number.isFinite(x))
+  const mean = v.reduce((a, b) => a + b, 0) / (v.length || 1)
+  const sd = Math.sqrt(v.reduce((a, b) => a + (b - mean) ** 2, 0) / (v.length || 1)) || 1
+  return (x) => (Number.isFinite(x) ? (x - mean) / sd : 0)
+}
+
+/** Weighted z-scores → display score, ranks, gap to leader, top factor. */
+function rankMvp(pool, inputs, weights, extra = () => 0) {
+  const z = Object.fromEntries(Object.keys(inputs).map((k) => [k, zScorer(pool.map(inputs[k]))]))
+  for (const c of pool) {
+    const parts = Object.fromEntries(Object.keys(inputs).map((k) => [k, weights[k] * z[k](inputs[k](c))]))
+    const composite = Object.values(parts).reduce((a, b) => a + b, 0) + extra(c)
+    c.score = Math.round(Math.max(0, Math.min(100, 50 + 15 * composite)) * 10) / 10
+    c.top = Object.entries(parts).sort((a, b) => b[1] - a[1])[0]
+  }
+  pool.sort((a, b) => b.score - a.score)
+  pool.forEach((c, i) => {
+    c.rank = i + 1
+    c.gap = Math.round((pool[0].score - c.score) * 10) / 10
+  })
+  return pool
+}
+
+function oursSummary(ranked, team) {
+  const best = ranked.find((c) => c.team === team)
+  if (!best) return { none: true }
+  return { rank: best.rank, inTop: best.rank <= MVP_TOP, candidate: best.rank <= MVP_TOP ? undefined : best }
+}
+
+const recText = (r) => (r ? `${r.w}-${r.l}${r.t ? `-${r.t}` : ''}` : '')
+
+async function buildMvpNfl(input) {
+  if (!input) throw new Error('no NFL play-by-play')
+  const { passers, receivers, rushers, idMap, weeks, mvpStats, positions, fullNames } = input
+  const records = await nflRecords()
+  const winPct = (team) => {
+    const r = records[team]
+    const g = r ? r.w + r.l + r.t : 0
+    return g ? (r.w + r.t / 2) / g : 0.5
+  }
+  const espnAbbr = (a) => NFLVERSE_ABBR[a] ?? a
+  const SKILL = new Set(['RB', 'FB', 'WR', 'TE'])
+
+  const pool = []
+  for (const [id, s] of mvpStats) {
+    const pos = positions.get(id) ?? ''
+    const qb = pos === 'QB'
+    const pass = passers.get(id)
+    const rush = rushers.get(id)
+    const rec = receivers.get(id)
+    if (qb) {
+      if (!pass || pass.db < 12 * weeks) continue
+    } else {
+      if (!SKILL.has(pos)) continue
+      if ((rush?.car ?? 0) + (rec?.tgt ?? 0) < 8 * weeks) continue
+    }
+    const team = espnAbbr(s.team)
+    const epa = qb ? (pass?.epa ?? 0) + (rush?.epa ?? 0) : (rec?.epa ?? 0) + (rush?.epa ?? 0)
+    const yds = s.passYds + s.rushYds + s.recYds
+    const td = s.passTd + s.rushTd + s.recTd
+    const to = s.ints + s.fumLost
+    pool.push({
+      id: idMap.get(id) ?? null,
+      name: fullNames.get(id) ?? pass?.name ?? rush?.name ?? rec?.name ?? id,
+      team,
+      pos,
+      qb,
+      record: recText(records[team]),
+      win: winPct(team),
+      epa: round(epa, 1),
+      prod: yds + 20 * td - 45 * to,
+      stats: {
+        games: s.games.size, passYds: s.passYds, passTd: s.passTd, ints: s.ints,
+        rushYds: s.rushYds, rushTd: s.rushTd, recYds: s.recYds, recTd: s.recTd, fumLost: s.fumLost,
+        rec: rec?.rec ?? 0, car: rush?.car ?? 0,
+      },
+    })
+  }
+  if (!pool.length) throw new Error('no qualified NFL candidates yet')
+  const w = MVP_WEIGHTS.nfl
+  const ranked = rankMvp(pool, { epa: (c) => c.epa, prod: (c) => c.prod, win: (c) => c.win }, w, (c) => (c.qb ? 0 : w.nonQb))
+  const epaLeader = Math.max(...pool.map((c) => c.epa))
+  const out = ranked.map(({ qb, prod, top, ...c }) => ({
+    ...c,
+    win: round(c.win),
+    reason:
+      top[1] <= 0
+        ? 'Balanced season'
+        : top[0] === 'win'
+          ? `Team record (${c.record})`
+          : top[0] === 'epa'
+            ? c.epa === epaLeader
+              ? `Leads the league in EPA (${c.epa > 0 ? '+' : ''}${c.epa})`
+              : `Elite efficiency (${c.epa > 0 ? '+' : ''}${c.epa} EPA)`
+            : `Huge production (${(c.stats.passYds + c.stats.rushYds + c.stats.recYds).toLocaleString('en-US')} yds, ${c.stats.passTd + c.stats.rushTd + c.stats.recTd} TD)`,
+  }))
+  return {
+    available: true,
+    season: NFL_SEASON,
+    through: `Week ${weeks}`,
+    smallSample: weeks < 4,
+    poolSize: out.length,
+    min: { dropbacks: 12 * weeks, touches: 8 * weeks },
+    candidates: out.slice(0, MVP_TOP),
+    ours: oursSummary(out, 'NYJ'),
+  }
+}
+
+async function buildMvpNba() {
+  const sb = await getJSON(`${ESPN}/scoreboard`)
+  const current = sb.leagues?.[0]?.season?.year
+  const { rows, season } = await espnByAthlete('basketball', 'nba', current, 'offensive.avgPoints')
+  if (!season || season.year !== current) throw new Error('the NBA regular season has no games yet')
+
+  // Team records from the standings.
+  const st = await getJSON(`https://site.api.espn.com/apis/v2/sports/basketball/nba/standings`)
+  const records = {}
+  const walk = (n) => {
+    for (const e of n.standings?.entries ?? []) {
+      const v = (type) => Number(e.stats.find((s) => s.type === type)?.value ?? 0)
+      records[e.team.abbreviation] = { w: v('wins'), l: v('losses'), t: 0 }
+    }
+    n.children?.forEach(walk)
+  }
+  walk(st)
+
+  const tot = (s, k) => s[k] ?? 0
+  let lgPts = 0
+  let lgTsa = 0
+  for (const { stats: s } of rows) {
+    lgPts += tot(s, 'offensive.points')
+    lgTsa += tot(s, 'offensive.fieldGoalsAttempted') + 0.44 * tot(s, 'offensive.freeThrowsAttempted')
+  }
+  const lgTs = lgPts / (2 * lgTsa)
+
+  const pool = []
+  for (const { stats: s, ...r } of rows) {
+    const gp = tot(s, 'general.gamesPlayed')
+    const rec = records[r.team]
+    if (!gp || !rec) continue
+    const mpg = tot(s, 'general.minutes') / gp
+    if (mpg < 25) continue
+    const teamGames = rec.w + rec.l
+    // 65-game rule, pro-rated: out once 18+ team games are missed, "at risk" when below pace.
+    if (teamGames - gp > 17) continue
+    const pts = tot(s, 'offensive.points')
+    const fgm = tot(s, 'offensive.fieldGoalsMade')
+    const fga = tot(s, 'offensive.fieldGoalsAttempted')
+    const ftm = tot(s, 'offensive.freeThrowsMade')
+    const fta = tot(s, 'offensive.freeThrowsAttempted')
+    const reb = tot(s, 'general.rebounds')
+    const ast = tot(s, 'offensive.assists')
+    const stl = tot(s, 'defensive.steals')
+    const blk = tot(s, 'defensive.blocks')
+    const tov = tot(s, 'offensive.turnovers')
+    const pf = tot(s, 'general.fouls')
+    const tsa = fga + 0.44 * fta
+    const ts = tsa ? pts / (2 * tsa) : 0
+    pool.push({
+      id: r.id,
+      name: r.name,
+      team: r.team,
+      pos: r.pos,
+      record: recText(rec),
+      win: teamGames ? rec.w / teamGames : 0.5,
+      atRisk: gp / Math.max(1, teamGames) < 65 / 82,
+      gameScore: (pts + 0.4 * fgm - 0.7 * fga - 0.4 * (fta - ftm) + 0.35 * reb + stl + 0.7 * ast + 0.7 * blk - 0.4 * pf - tov) / gp,
+      eff: (2 * (ts - lgTs) * tsa) / gp,
+      stats: {
+        games: gp, teamGames, mpg: round(mpg, 1),
+        ppg: round(pts / gp, 1), rpg: round(reb / gp, 1), apg: round(ast / gp, 1), spg: round(stl / gp, 1), bpg: round(blk / gp, 1),
+        ts: round(ts),
+      },
+    })
+  }
+  if (!pool.length) throw new Error('no qualified NBA candidates yet')
+  const ranked = rankMvp(pool, { prod: (c) => c.gameScore, eff: (c) => c.eff, win: (c) => c.win }, MVP_WEIGHTS.nba)
+  const effLeader = Math.max(...pool.map((c) => c.eff))
+  const out = ranked.map(({ top, gameScore, eff, ...c }) => ({
+    ...c,
+    win: round(c.win),
+    gameScore: round(gameScore, 1),
+    reason:
+      top[1] <= 0
+        ? 'Balanced season'
+        : top[0] === 'win'
+          ? `Team record (${c.record})`
+          : top[0] === 'eff'
+            ? `${eff === effLeader ? 'Most efficient scorer' : 'Efficient scorer'} (${(c.stats.ts * 100).toFixed(1)}% TS)`
+            : `Elite production (${c.stats.ppg} / ${c.stats.rpg} / ${c.stats.apg})`,
+  }))
+  const teamGames = Object.values(records).map((r) => r.w + r.l).sort((a, b) => a - b)
+  const medianGames = teamGames[teamGames.length >> 1] ?? 0
+  return {
+    available: true,
+    season: season.year,
+    seasonLabel: season.displayName,
+    through: `${medianGames} games`,
+    smallSample: medianGames < 10,
+    poolSize: out.length,
+    lgTs: round(lgTs),
+    candidates: out.slice(0, MVP_TOP),
+    ours: oursSummary(out, 'POR'),
   }
 }
 
