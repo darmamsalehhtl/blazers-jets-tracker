@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { MvpStandingCard } from '../components/player/MvpStandingCard'
 import { PlayerAdvanced } from '../components/player/PlayerAdvanced'
 import { PlayerCareer } from '../components/player/PlayerCareer'
 import { PlayerGamelog } from '../components/player/PlayerGamelog'
@@ -45,9 +46,7 @@ export default function PlayerPage() {
 
   return (
     <div className="space-y-4">
-      <Link to={`/team/${team.key}?tab=roster`} className="text-sm text-muted hover:text-text">
-        ← {team.nickname} roster
-      </Link>
+      <BackLink fallback={`/team/${team.key}`} />
       <div className="overflow-hidden rounded-3xl border border-border bg-surface">
         <div className="h-1" style={{ background: a.team?.id === team.id ? team.color : 'var(--border)' }} />
         <div className="flex items-end gap-4 px-4 pt-4">
@@ -87,6 +86,8 @@ export default function PlayerPage() {
         </dl>
       </div>
 
+      <MvpStandingCard team={team} id={athleteId} />
+
       <Tabs tabs={TABS.map((t) => ({ id: t.id, label: t.label }))} value={tab} onChange={(id) => setParams(id === 'overview' ? {} : { tab: id }, { replace: true })} />
 
       {tab === 'overview' && <PlayerOverview team={team} id={athleteId} bio={bio.data} />}
@@ -95,5 +96,24 @@ export default function PlayerPage() {
       {tab === 'career' && <PlayerCareer team={team} id={athleteId} />}
       {tab === 'advanced' && <PlayerAdvanced team={team} id={athleteId} name={a.displayName} />}
     </div>
+  )
+}
+
+/** Back to wherever the user came from; a directly opened player page goes to its team page. */
+function BackLink({ fallback }: { fallback: string }) {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const cls = 'text-sm text-muted hover:text-text'
+  if (location.key === 'default') {
+    return (
+      <Link to={fallback} className={cls}>
+        ← Back
+      </Link>
+    )
+  }
+  return (
+    <button type="button" onClick={() => navigate(-1)} className={cls}>
+      ← Back
+    </button>
   )
 }

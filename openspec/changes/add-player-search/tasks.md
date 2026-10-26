@@ -27,14 +27,14 @@
 
 ## 4. Player page
 
-- [ ] 4.1 Add the MVP standing card to `PlayerPage.tsx`:
+- [x] 4.1 Add the MVP standing card to `PlayerPage.tsx`:
   - ranked: "#rank of N", score, gap, and the 65-game risk tag
   - not ranked: the reason
   - unavailable: a short note
 
   It links to `/mvp?league=…`. Verify with a top-10 player (rank and score match the MVP page), a low-ranked eligible player, an NFL kicker, and an NBA bench player.
-- [ ] 4.2 Change the back link to "← Back": `navigate(-1)` when there is in-app history, otherwise `/team/{key}`. Verify that searching from the Blazers page and going back returns to the Blazers page, and that a directly opened player URL goes back to its team page.
-- [ ] 4.3 Add the search and MVP standing to the README feature list, run `npm run lint` and `npm run build`, and commit ("Show MVP standing and a real back link on player pages").
+- [x] 4.2 Change the back link to "← Back": `navigate(-1)` when there is in-app history, otherwise `/team/{key}`. Verify that searching from the Blazers page and going back returns to the Blazers page, and that a directly opened player URL goes back to its team page.
+- [x] 4.3 Add the search and MVP standing to the README feature list, run `npm run lint` and `npm run build`, and commit ("Show MVP standing and a real back link on player pages").
 
 ## 5. Integration check
 
