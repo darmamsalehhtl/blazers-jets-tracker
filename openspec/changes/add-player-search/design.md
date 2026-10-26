@@ -30,7 +30,7 @@ The build writes `public/data/players-nfl.json` and `public/data/players-nba.jso
 { id, name, pos, team, mvp: { rank, score, gap, atRisk? } | { reason } }
 ```
 
-plus a header `{ available, season, ranked: N, leader, updatedAt }`. The size is roughly 2,600 NFL rows ≈ 150 KB (≈ 35 KB gzipped) and 520 NBA rows ≈ 30 KB.
+plus a header `{ available, season, ranked: N, leader, updatedAt }`. The size is roughly 2,600 NFL rows ≈ 320 KB (≈ 46 KB gzipped) and 520 NBA rows ≈ 58 KB (≈ 11 KB gzipped).
 
 - *Alternative:* the ESPN search API. Rejected: it returns retired and free-agent players (the spec excludes them), needs a network round trip per keystroke (the spec requires none), and gives no MVP standing.
 

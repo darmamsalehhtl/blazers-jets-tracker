@@ -7,10 +7,10 @@
 
 ## 2. Player index
 
-- [ ] 2.1 Add a roster loader for all 32 NFL and 30 NBA teams (concurrency 8, handles flat and grouped `athletes`, retries a failed team and records missing teams in the header). Verify by logging per-league player counts (NFL > 1,500, NBA > 400) and that the Jets and Blazers rosters match their team pages.
-- [ ] 2.2 Add the `players` builder that writes `players-nfl.json` and `players-nba.json`. Each player carries `mvp` as a standing or a `reason`, using design decision 3's order and the name + team fallback for unmapped NFL players. Each league fails independently, and when MVP data is missing every row gets "MVP data unavailable". Verify that every row has a standing or a non-empty reason, and that ranks 1–10 equal the `mvp.json` top 10 (same names, scores, and order).
-- [ ] 2.3 Spot-check reasons with the build log for one example of each: NFL defender, QB below the dropback minimum (number shown), NBA under 25 mpg (minutes shown), NBA 65-game exclusion if any, and a no-games player. Log the count of unmatched ranked NFL players.
-- [ ] 2.4 Document both files in the `build-data.mjs` header and the README's "How it works". Commit ("Build NFL and NBA player search index with MVP standing").
+- [x] 2.1 Add a roster loader for all 32 NFL and 30 NBA teams (concurrency 8, handles flat and grouped `athletes`, retries a failed team and records missing teams in the header). Verify by logging per-league player counts (NFL > 1,500, NBA > 400) and that the Jets and Blazers rosters match their team pages.
+- [x] 2.2 Add the `players` builder that writes `players-nfl.json` and `players-nba.json`. Each player carries `mvp` as a standing or a `reason`, using design decision 3's order and the name + team fallback for unmapped NFL players. Each league fails independently, and when MVP data is missing every row gets "MVP data unavailable". Verify that every row has a standing or a non-empty reason, and that ranks 1–10 equal the `mvp.json` top 10 (same names, scores, and order).
+- [x] 2.3 Spot-check reasons with the build log for one example of each: NFL defender, QB below the dropback minimum (number shown), NBA under 25 mpg (minutes shown), NBA 65-game exclusion if any, and a no-games player. Log the count of unmatched ranked NFL players.
+- [x] 2.4 Document both files in the `build-data.mjs` header and the README's "How it works". Commit ("Build NFL and NBA player search index with MVP standing").
 
 ## 3. Search on the team page
 

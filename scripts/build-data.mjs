@@ -10,6 +10,10 @@
 //              plus where the best Jets/Blazers player ranks). NFL from nflverse
 //              play-by-play + schedule, NBA from ESPN stats + standings; each
 //              league fails on its own. Weights: MVP_WEIGHTS.
+//   players-nfl.json / players-nba.json – every player on a current roster
+//              (ESPN, all teams) for the team-page search, each with their MVP
+//              standing (rank of N, score, gap) or the reason they aren't ranked.
+//              Built from the same MVP run as mvp.json, so ranks always agree.
 //   draft.json – inputs for the live NFL draft order: every team's schedule
 //              (for strength of schedule) and the traded picks for next draft.
 //
@@ -47,6 +51,8 @@ async function main() {
     'nfl-league': async () => buildNflLeague((await once()).leagueInput),
     'nba-league': buildNbaLeague,
     mvp: async () => (await mvpOnce()).json,
+    'players-nfl': async () => buildPlayerIndex('nfl', await mvpOnce()),
+    'players-nba': async () => buildPlayerIndex('nba', await mvpOnce()),
     draft: buildDraft,
   }
   const names = Object.keys(builders).filter((n) => !only || only.includes(n))
@@ -1137,6 +1143,87 @@ async function buildMvpNba() {
         }),
       ),
     },
+  }
+}
+
+// ------------------------------------------------------------------ Player search index
+
+/**
+ * Every player on a current roster of every team in the league. Failed teams are
+ * retried once (getJSON already retries 5xx) and reported in `missingTeams`.
+ */
+async function leagueRosters(sport, league) {
+  const d = await getJSON(`https://site.api.espn.com/apis/site/v2/sports/${sport}/${league}/teams`)
+  const teams = (d.sports?.[0]?.leagues?.[0]?.teams ?? []).map((x) => x.team)
+  const missingTeams = []
+  const lists = await pool(teams, 8, async (team) => {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const r = await getJSON(`https://site.api.espn.com/apis/site/v2/sports/${sport}/${league}/teams/${team.id}/roster`)
+        // NFL groups athletes by unit ({ position, items }), NBA lists them flat.
+        const flat = (r.athletes ?? []).flatMap((a) => (Array.isArray(a.items) ? a.items : [a]))
+        return flat.map((a) => ({ id: a.id, name: a.displayName ?? a.fullName, pos: a.position?.abbreviation ?? '', team: team.abbreviation }))
+      } catch {
+        // retry once below
+      }
+    }
+    missingTeams.push(team.abbreviation)
+    return []
+  })
+  const seen = new Set()
+  const players = lists.flat().filter((p) => p.id && p.name && !seen.has(p.id) && seen.add(p.id))
+  if (!players.length) throw new Error(`no ${league.toUpperCase()} rosters`)
+  return { players, teamCount: teams.length, missingTeams }
+}
+
+const MVP_POSITIONS_NFL = new Set(['QB', 'RB', 'FB', 'WR', 'TE'])
+
+/** Why a current player isn't in the MVP pool, in plain words (design decision 3). */
+function notRankedReason(league, p, extra) {
+  if (league === 'nfl') {
+    if (!MVP_POSITIONS_NFL.has(p.pos)) return "Defenders, linemen and specialists aren't ranked"
+    const v = extra.volumes.byId.get(p.id) ?? extra.volumes.byName.get(`${normName(p.name)}|${p.team}`)
+    if (!v || !v.games) return 'No games this season'
+    if (p.pos === 'QB' && v.dropbacks < extra.min.dropbacks) return `Not enough dropbacks yet (${v.dropbacks} of ${extra.min.dropbacks})`
+    if (p.pos !== 'QB' && v.touches < extra.min.touches) return `Not enough touches yet (${v.touches} of ${extra.min.touches})`
+    return 'Not in the MVP pool'
+  }
+  const v = extra.volumes.get(p.id)
+  if (!v || !v.gp) return 'No games this season'
+  if (v.teamGames - v.gp > 17) return "Can't reach 65 games anymore"
+  if (v.mpg < 25) return `Fewer than 25 minutes per game (${v.mpg.toFixed(1)})`
+  return 'Not in the MVP pool'
+}
+
+/** players-nfl.json / players-nba.json: every rostered player with their MVP standing or the reason they have none. */
+async function buildPlayerIndex(league, mvp) {
+  const { players, teamCount, missingTeams } = await leagueRosters(league === 'nfl' ? 'football' : 'basketball', league)
+  const extra = mvp.extra[league]
+  const json = mvp.json[league]
+  const rows = players.map((p) => {
+    let standing
+    if (extra.error) standing = { reason: 'MVP data unavailable' }
+    else {
+      standing = extra.standings.get(p.id) ?? (league === 'nfl' ? extra.byName.get(`${normName(p.name)}|${p.team}`) : undefined)
+      standing ??= { reason: notRankedReason(league, p, extra) }
+    }
+    return { id: p.id, name: p.name, pos: p.pos, team: p.team, mvp: standing }
+  })
+  const ranked = rows.filter((r) => r.mvp.rank)
+  if (!extra.error) {
+    const missing = json.poolSize - ranked.length
+    if (missing) console.warn(`players-${league}: ${missing} ranked MVP candidates not found on any roster`)
+  }
+  return {
+    available: true,
+    league,
+    season: json.available ? json.season : undefined,
+    teamCount,
+    missingTeams,
+    ranked: extra.error ? 0 : json.poolSize,
+    leader: json.available ? json.candidates[0]?.name : undefined,
+    mvpError: extra.error,
+    players: rows,
   }
 }
 
