@@ -31,7 +31,7 @@
 
 ## 4. Integration check
 
-- [ ] 4.1 Run the full `node scripts/build-data.mjs` and `npm run build`, open `/mvp` for both leagues with no console errors, switch leagues, and tap through a candidate's face to their player page. Then push, and confirm that the Deploy workflow passes and that `mvp.json` is served on the live site.
+- [x] 4.1 Run the full `node scripts/build-data.mjs` and `npm run build`, open `/mvp` for both leagues with no console errors, switch leagues, and tap through a candidate's face to their player page. Then push, and confirm that the Deploy workflow passes and that `mvp.json` is served on the live site.
 
 ## Workflow follow-up
 
