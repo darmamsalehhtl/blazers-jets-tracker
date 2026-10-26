@@ -2,9 +2,9 @@
 
 ## 1. NFL inputs from play-by-play
 
-- [ ] 1.1 Extend `collectPlayers` in `scripts/build-data.mjs` with pass yards, pass TD, interceptions, rush and receiving yards and TD, fumbles lost, and games played per player (regular season only). Verify with `ONLY=nyj,nfl-league node scripts/build-data.mjs`: both files are produced, and their content is unchanged apart from `updatedAt` (diff against a copy made beforehand).
-- [ ] 1.2 Read positions from nflverse `players.csv` (already streamed for the id map) and compute team records from `games.csv`. Verify by logging Jets QB totals and the Jets record, and comparing them with ESPN for the same week.
-- [ ] 1.3 Commit ("Collect NFL MVP inputs from play-by-play").
+- [x] 1.1 Extend `collectPlayers` in `scripts/build-data.mjs` with pass yards, pass TD, interceptions, rush and receiving yards and TD, fumbles lost, and games played per player (regular season only). Verify with `ONLY=nyj,nfl-league node scripts/build-data.mjs`: both files are produced, and their content is unchanged apart from `updatedAt` (diff against a copy made beforehand).
+- [x] 1.2 Read positions from nflverse `players.csv` (already streamed for the id map) and compute team records from `games.csv`. Verify by logging Jets QB totals and the Jets record, and comparing them with ESPN for the same week.
+- [x] 1.3 Commit ("Collect NFL MVP inputs from play-by-play").
 
 ## 2. MVP scoring in the build
 

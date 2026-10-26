@@ -220,6 +220,8 @@ async function buildJets(team = 'NYJ') {
   const passers = new Map()
   const receivers = new Map()
   const rushers = new Map()
+  // Regular-season box-score totals per player for the MVP race (gsis id → totals).
+  const mvpStats = new Map()
   const byDown = { off: {}, def: {} }
   const byQuarter = { off: {}, def: {} }
   const get = (m, k, init) => (m.has(k) ? m.get(k) : m.set(k, init()).get(k))
@@ -235,6 +237,8 @@ async function buildJets(team = 'NYJ') {
       const ours = p.posteam === team ? wpa : -wpa
       bigPlays.push({ week: num(p.week), qtr: num(p.qtr), clock: p.time, desc: p.desc, wpa: round(ours), opp: p.posteam === team ? p.defteam : p.posteam })
     }
+    // Kneel-downs count as (negative) rushes in official stats.
+    if (p.season_type === 'REG' && p.posteam && (isScrimmage || p.play_type === 'qb_kneel')) collectMvpStats(p, mvpStats, get)
     if (!isScrimmage || !p.posteam) return
     addPlay(get(off, p.posteam, newAcc), p)
     addPlay(get(def, p.defteam, newAcc), p)
@@ -276,8 +280,10 @@ async function buildJets(team = 'NYJ') {
 
   // Map nflverse player ids → ESPN ids.
   const idMap = new Map()
+  const positions = new Map()
   await streamCsv(`${NFLVERSE}/players/players.csv`, (r) => {
     if (r.gsis_id && r.espn_id && r.espn_id !== 'NA') idMap.set(r.gsis_id, r.espn_id)
+    if (r.gsis_id && r.position && r.position !== 'NA') positions.set(r.gsis_id, r.position)
   })
 
   const players = buildPlayerTables(passers, receivers, rushers, idMap, team)
@@ -298,8 +304,40 @@ async function buildJets(team = 'NYJ') {
     byQuarter: Object.fromEntries(['off', 'def'].map((s) => [s, Object.fromEntries(Object.entries(byQuarter[s]).map(([k, v]) => [k, summarize(v)]))])),
     bigPlays: bigPlays.sort((a, b) => Math.abs(b.wpa) - Math.abs(a.wpa)).slice(0, 20),
     players,
-    leagueInput: { passers, receivers, rushers, idMap, weeks },
+    leagueInput: { passers, receivers, rushers, idMap, weeks, mvpStats, positions },
   }
+}
+
+/** Official-style box score totals (yards, TDs, turnovers, games) from one scrimmage play. */
+function collectMvpStats(p, stats, get) {
+  if (p.two_point_attempt === '1') return
+  const one = (id) => {
+    const s = get(stats, id, () => ({
+      team: p.posteam, passYds: 0, passTd: 0, ints: 0, rushYds: 0, rushTd: 0, recYds: 0, recTd: 0, fumLost: 0, games: new Set(),
+    }))
+    s.team = p.posteam
+    s.games.add(p.game_id)
+    return s
+  }
+  const has = (id) => id && id !== 'NA'
+  if (has(p.passer_player_id) && p.pass_attempt === '1') {
+    const s = one(p.passer_player_id)
+    s.passYds += num(p.passing_yards) ?? 0
+    if (p.pass_touchdown === '1') s.passTd++
+    if (p.interception === '1') s.ints++
+  }
+  if (has(p.receiver_player_id) && p.pass_attempt === '1') {
+    const s = one(p.receiver_player_id)
+    s.recYds += num(p.receiving_yards) ?? 0
+    if (p.pass_touchdown === '1') s.recTd++
+  }
+  // Includes QB scrambles, like the official rushing stats.
+  if (has(p.rusher_player_id) && p.rush_attempt === '1') {
+    const s = one(p.rusher_player_id)
+    s.rushYds += num(p.rushing_yards) ?? 0
+    if (p.rush_touchdown === '1') s.rushTd++
+  }
+  if (p.fumble_lost === '1' && has(p.fumbled_1_player_id) && p.fumbled_1_team === p.posteam) one(p.fumbled_1_player_id).fumLost++
 }
 
 function collectPlayers(p, passers, receivers, rushers, get) {
@@ -801,17 +839,44 @@ const WIKI_TEAMS = {
 }
 const SNAPSHOT = new URL('./draft-trades-snapshot.json', import.meta.url)
 
+/** This season's regular-season games (ESPN abbreviations), read once and shared. */
+let scheduleOnce
+function nflSchedule() {
+  scheduleOnce ??= (async () => {
+    const games = []
+    const ab = (a) => NFLVERSE_ABBR[a] ?? a
+    await streamCsv('https://github.com/nflverse/nfldata/raw/master/data/games.csv', (r) => {
+      if (Number(r.season) !== NFL_SEASON || r.game_type !== 'REG') return
+      games.push({ week: num(r.week), away: ab(r.away_team), home: ab(r.home_team), awayScore: num(r.away_score), homeScore: num(r.home_score) })
+    })
+    return games
+  })()
+  return scheduleOnce
+}
+
+/** Win/loss/tie record per team from finished regular-season games. */
+async function nflRecords() {
+  const rec = {}
+  for (const g of await nflSchedule()) {
+    if (g.awayScore === null || g.homeScore === null) continue
+    for (const [team, us, them] of [[g.away, g.awayScore, g.homeScore], [g.home, g.homeScore, g.awayScore]]) {
+      const r = (rec[team] ??= { w: 0, l: 0, t: 0 })
+      if (us > them) r.w++
+      else if (us < them) r.l++
+      else r.t++
+    }
+  }
+  return rec
+}
+
 async function buildDraft() {
   const draftYear = NFL_SEASON + 1
   // Full regular-season schedule → each team's 17 opponents (for strength of schedule).
   const opponents = {}
-  const ab = (a) => NFLVERSE_ABBR[a] ?? a
-  await streamCsv('https://github.com/nflverse/nfldata/raw/master/data/games.csv', (r) => {
-    if (Number(r.season) !== NFL_SEASON || r.game_type !== 'REG') return
-    const [away, home] = [ab(r.away_team), ab(r.home_team)]
-    ;(opponents[away] ??= []).push(home)
-    ;(opponents[home] ??= []).push(away)
-  })
+  for (const g of await nflSchedule()) {
+    ;(opponents[g.away] ??= []).push(g.home)
+    ;(opponents[g.home] ??= []).push(g.away)
+  }
   if (Object.keys(opponents).length !== 32) throw new Error(`schedule for ${NFL_SEASON} incomplete`)
 
   let trades
