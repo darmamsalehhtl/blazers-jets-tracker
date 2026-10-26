@@ -14,8 +14,8 @@
 
 ## 3. Search on the team page
 
-- [ ] 3.1 Add `src/lib/playerIndex.ts`: index types, name normalization (NFD, strip accents and punctuation, lowercase), and the matcher/ranker from design decision 4. Verify by running it in the dev console or a small script against the built index: "doncic" finds Luka Dončić, "josh al" finds Josh Allen and not other Joshes, "mahomes" finds Patrick Mahomes, and a single character returns nothing.
-- [ ] 3.2 Build `src/components/PlayerSearch.tsx`:
+- [x] 3.1 Add `src/lib/playerIndex.ts`: index types, name normalization (NFD, strip accents and punctuation, lowercase), and the matcher/ranker from design decision 4. Verify by running it in the dev console or a small script against the built index: "doncic" finds Luka Dončić, "josh al" finds Josh Allen and not other Joshes, "mahomes" finds Patrick Mahomes, and a single character returns nothing.
+- [x] 3.2 Build `src/components/PlayerSearch.tsx`:
   - combobox input with lazy index load on first focus
   - up to 8 results with headshot, name, position · team, and "MVP #rank" or "Not ranked"
   - "N more, keep typing" and "No player found"
@@ -23,7 +23,7 @@
   - navigates to the player page and clears the input
 
   Render it above the tabs in `TeamPage.tsx` (NFL for Jets, NBA for Blazers). Verify in the browser at 390px and 1200px, light and dark mode: no horizontal scroll, and keyboard and tap both open a player.
-- [ ] 3.3 Commit ("Add player search to the team pages").
+- [x] 3.3 Commit ("Add player search to the team pages").
 
 ## 4. Player page
 

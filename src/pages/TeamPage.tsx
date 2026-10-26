@@ -8,6 +8,7 @@ import { TeamSchedule } from '../components/team/TeamSchedule'
 import { TeamStandings } from '../components/team/TeamStandings'
 import { TeamStats } from '../components/team/TeamStats'
 import { TeamVsLeague } from '../components/team/TeamVsLeague'
+import { PlayerSearch } from '../components/PlayerSearch'
 import { ErrorBox, Logo, Spinner, Tabs } from '../components/ui'
 import { urls, type ScheduleResponse } from '../lib/espn'
 import { isTeamKey, TEAMS } from '../lib/teams'
@@ -54,6 +55,7 @@ export default function TeamPage() {
           </p>
         </div>
       </div>
+      <PlayerSearch team={team} />
       <Tabs
         tabs={TABS.map((t) => ({ id: t.id, label: t.label }))}
         value={tab}

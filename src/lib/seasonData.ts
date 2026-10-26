@@ -178,11 +178,12 @@ type DataFor<K extends TeamKey> = K extends 'nyj' ? JetsData : BlazersData
 
 const cache = new Map<string, Promise<unknown>>()
 
-/** Fetch one of the JSON files the CI build writes to /data/ (cached per page load). */
-export function useDataFile<T>(name: string) {
+/** Fetch one of the JSON files the CI build writes to /data/ (cached per page load). `null` = not yet. */
+export function useDataFile<T>(name: string | null) {
   const [data, setData] = useState<T>()
   const [error, setError] = useState<Error>()
   useEffect(() => {
+    if (!name) return
     let alive = true
     if (!cache.has(name)) {
       cache.set(
