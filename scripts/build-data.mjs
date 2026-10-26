@@ -959,7 +959,7 @@ async function buildMvpNfl(input) {
     grouped: ['epa', 'prod'],
   })
   const epaLeader = Math.max(...pool.map((c) => c.epa))
-  const out = ranked.map(({ qb, prod, top, ...c }) => ({
+  const out = ranked.map(({ qb: _qb, prod: _prod, top, ...c }) => ({
     ...c,
     win: round(c.win),
     reason:
