@@ -9,46 +9,32 @@ export function Layout() {
   return (
     <div className="mx-auto min-h-dvh max-w-5xl">
       <header className="sticky top-0 z-20 border-b border-border bg-bg/85 backdrop-blur-md" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-        <div className="flex h-14 items-center gap-2 px-4">
-          <Link to="/" className="mr-auto flex items-center gap-2 font-semibold tracking-tight">
+        <div className="flex h-14 items-center gap-0.5 px-3 sm:gap-2 sm:px-4">
+          <Link to="/" className="mr-auto flex shrink-0 items-center gap-2 font-semibold tracking-tight">
             <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="h-7 w-7" />
             <span className="hidden sm:inline">Tracker</span>
           </Link>
-          <NavLink
-            to="/live"
-            className={({ isActive }) =>
-              `flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium ${isActive ? 'bg-surface-2 text-text' : 'text-muted hover:text-text'}`
-            }
-          >
+          <NavLink to="/live" className={navClass}>
             <span className="h-2 w-2 rounded-full bg-live" />
             Live
           </NavLink>
           {TEAM_ORDER.map((k) => (
-            <NavLink
-              key={k}
-              to={`/team/${k}`}
-              className={({ isActive }) =>
-                `flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium ${
-                  isActive ? 'bg-surface-2 text-text' : 'text-muted hover:text-text'
-                }`
-              }
-            >
-              <img src={TEAMS[k].logo} alt="" className="h-5 w-5 object-contain" />
+            <NavLink key={k} to={`/team/${k}`} className={navClass}>
+              {/* Logos only where there's room: five tabs have to fit on a phone. */}
+              <img src={TEAMS[k].logo} alt="" className="hidden h-5 w-5 object-contain sm:block" />
               {TEAMS[k].nickname}
             </NavLink>
           ))}
-          <NavLink
-            to="/draft"
-            className={({ isActive }) =>
-              `rounded-lg px-2.5 py-1.5 text-sm font-medium ${isActive ? 'bg-surface-2 text-text' : 'text-muted hover:text-text'}`
-            }
-          >
+          <NavLink to="/draft" className={navClass}>
             Draft
+          </NavLink>
+          <NavLink to="/mvp" className={navClass}>
+            MVP
           </NavLink>
           <button
             onClick={toggle}
             aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-            className="ml-1 flex h-9 w-9 items-center justify-center rounded-lg text-muted hover:bg-surface-2 hover:text-text"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-surface-2 hover:text-text sm:ml-1"
           >
             {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
           </button>
@@ -62,6 +48,11 @@ export function Layout() {
     </div>
   )
 }
+
+const navClass = ({ isActive }: { isActive: boolean }) =>
+  `flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium sm:px-2.5 ${
+    isActive ? 'bg-surface-2 text-text' : 'text-muted hover:text-text'
+  }`
 
 function SunIcon() {
   return (

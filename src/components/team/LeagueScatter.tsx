@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CartesianGrid, ReferenceLine, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis } from 'recharts'
+import { faceUrl } from '../../lib/espn'
 import type { TeamConfig } from '../../lib/teams'
 import { Card } from '../ui'
 
@@ -56,10 +57,6 @@ function useSize() {
   return [ref, size] as const
 }
 
-/** Square-cropped ESPN headshot. */
-function faceUrl(league: string, id: string, size = 96) {
-  return `https://a.espncdn.com/combiner/i?img=/i/headshots/${league}/players/full/${id}.png&w=${size}&h=${size}&scale=crop`
-}
 
 function initials(n: string) {
   return n

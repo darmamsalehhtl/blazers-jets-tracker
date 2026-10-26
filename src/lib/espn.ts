@@ -155,6 +155,16 @@ export function teamLogo(t: TeamRef): string | undefined {
   return t.logo ?? t.logos?.[0]?.href
 }
 
+/** Square-cropped ESPN headshot for an athlete id. */
+export function faceUrl(league: string, id: string, size = 96) {
+  return `https://a.espncdn.com/combiner/i?img=/i/headshots/${league}/players/full/${id}.png&w=${size}&h=${size}&scale=crop`
+}
+
+/** ESPN team logo by abbreviation (e.g. "nyj", "gs"). */
+export function teamLogoByAbbr(league: string, abbr: string) {
+  return `https://a.espncdn.com/i/teamlogos/${league}/500/${abbr.toLowerCase()}.png`
+}
+
 export function headshotUrl(h?: Logo | string): string | undefined {
   if (!h) return undefined
   return typeof h === 'string' ? h : h.href

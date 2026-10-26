@@ -5,6 +5,7 @@ import GamePage from './pages/GamePage'
 import DraftPage from './pages/DraftPage'
 import Home from './pages/Home'
 import LivePage from './pages/LivePage'
+import MvpPage from './pages/MvpPage'
 import PlayerPage from './pages/PlayerPage'
 import TeamPage from './pages/TeamPage'
 
@@ -17,6 +18,7 @@ export default function App() {
           <Route index element={<Home />} />
           <Route path="live" element={<LivePage />} />
           <Route path="draft" element={<DraftPage />} />
+          <Route path="mvp" element={<MvpPage />} />
           <Route path="team/:team" element={<Keyed by="team" page={TeamPage} />} />
           <Route path="game/:team/:eventId" element={<GamePage />} />
           <Route path="player/:team/:athleteId" element={<Keyed by="athleteId" page={PlayerPage} />} />

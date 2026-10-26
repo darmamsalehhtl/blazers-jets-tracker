@@ -17,8 +17,8 @@
 
 ## 3. MVP page
 
-- [ ] 3.1 Add `src/lib/mvp.ts` with the `mvp.json` types. Verify with `npm run build`, which typechecks.
-- [ ] 3.2 Build `src/pages/MvpPage.tsx`:
+- [x] 3.1 Add `src/lib/mvp.ts` with the `mvp.json` types. Verify with `npm run build`, which typechecks.
+- [x] 3.2 Build `src/pages/MvpPage.tsx`:
   - NFL/NBA switch stored in `?league=`, defaulting to NFL
   - ranked rows with face, name, team, score, gap to leader, team record, key stats and reason
   - at-risk marker
@@ -26,8 +26,8 @@
   - methodology note, small-sample note, "updated …", and a per-league error state
 
   Verify in the browser at 1200px and 390px, light and dark mode.
-- [ ] 3.3 Add the `/mvp` route in `src/App.tsx` and an "MVP" nav link in `Layout.tsx`. Below `sm`, the nav drops team logos and uses `px-2` so all five items fit. Verify with a 390px screenshot of the nav on every page (no horizontal scroll, every item visible).
-- [ ] 3.4 Add the MVP page to the README feature list. Run `npm run lint`, then commit ("Add MVP page with NFL and NBA MVP race").
+- [x] 3.3 Add the `/mvp` route in `src/App.tsx` and an "MVP" nav link in `Layout.tsx`. Below `sm`, the nav drops team logos and uses `px-2` so all five items fit. Verify with a 390px screenshot of the nav on every page (no horizontal scroll, every item visible).
+- [x] 3.4 Add the MVP page to the README feature list. Run `npm run lint`, then commit ("Add MVP page with NFL and NBA MVP race").
 
 ## 4. Integration check
 
