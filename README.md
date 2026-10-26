@@ -34,7 +34,7 @@ It works on phone and laptop and can be installed to your home screen.
 
 - Static site (Vite + React + TypeScript + Tailwind) hosted on GitHub Pages.
 - Live data comes straight from ESPN's public JSON endpoints in the browser. They send open CORS headers, so no server is needed.
-- `scripts/build-data.mjs` generates the season-analytics JSON. GitHub Actions runs it on every push and every 3 hours, then redeploys. Draft-order inputs (the season schedule from nflverse and traded picks parsed from Wikipedia) come from the same script; `scripts/draft-trades-snapshot.json` is the fallback if Wikipedia can't be read.
+- `scripts/build-data.mjs` generates the season-analytics JSON. GitHub Actions runs it on every push and every 3 hours, then redeploys. Draft-order inputs (the season schedule from nflverse and traded picks parsed from Wikipedia) come from the same script; `scripts/draft-trades-snapshot.json` is the fallback if Wikipedia can't be read. The MVP race (`mvp.json`) is scored there too: weighted z-scores of production, efficiency and team record (weights and their backtest in `MVP_WEIGHTS`).
 
 ## Run locally
 

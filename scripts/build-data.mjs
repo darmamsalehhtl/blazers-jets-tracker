@@ -7,7 +7,9 @@
 //   nfl-league.json / nba-league.json – every qualified player in the league
 //              (efficiency + volume) for the "vs League" scatter plots.
 //   mvp.json – "if the season ended today" NFL and NBA MVP races (top 10 each,
-//              plus where the best Jets/Blazers player ranks).
+//              plus where the best Jets/Blazers player ranks). NFL from nflverse
+//              play-by-play + schedule, NBA from ESPN stats + standings; each
+//              league fails on its own. Weights: MVP_WEIGHTS.
 //   draft.json – inputs for the live NFL draft order: every team's schedule
 //              (for strength of schedule) and the traded picks for next draft.
 //
@@ -834,8 +836,14 @@ async function buildNbaLeague() {
 
 // Weights live here so they're easy to tune. Each input is z-scored against the
 // candidate pool; display score = 50 + 15 × weighted sum (clamped 0–100).
+// Backtest (Oct 2026):
+//   NFL 2025: Stafford (MVP) 1st, Maye 2nd, Allen 3rd; McCaffrey (finalist) 12th.
+//   NFL 2024: Jackson, Goff, Allen (MVP) top 3; Barkley's 2,005-yard season 5th (3rd in the vote).
+//     nonQb −0.8 put 4 non-QBs in the 2024 top 10, −1.2 left Barkley 10th.
+//   NBA 2025-26: Gilgeous-Alexander (MVP) 1st, Jokic 2nd. Wembanyama (64 games, finalist via an
+//     exception) is excluded by the 65-game rule, which can't see the league's exceptions.
 const MVP_WEIGHTS = {
-  nfl: { epa: 0.5, prod: 0.2, win: 0.3, nonQb: -0.8 },
+  nfl: { epa: 0.5, prod: 0.2, win: 0.3, nonQb: -1.0 },
   nba: { prod: 0.55, eff: 0.2, win: 0.25 },
 }
 const MVP_TOP = 10
@@ -854,11 +862,25 @@ function zScorer(values) {
   return (x) => (Number.isFinite(x) ? (x - mean) / sd : 0)
 }
 
-/** Weighted z-scores → display score, ranks, gap to leader, top factor. */
-function rankMvp(pool, inputs, weights, extra = () => 0) {
-  const z = Object.fromEntries(Object.keys(inputs).map((k) => [k, zScorer(pool.map(inputs[k]))]))
+/**
+ * Weighted z-scores → display score, ranks, gap to leader, top factor.
+ * Inputs listed in `grouped` are z-scored within each player's `groupOf` group
+ * (e.g. position) instead of across the whole pool.
+ */
+function rankMvp(pool, inputs, weights, { extra = () => 0, groupOf = () => 'all', grouped = [] } = {}) {
+  const scorers = {}
+  for (const k of Object.keys(inputs)) {
+    if (!grouped.includes(k)) {
+      const z = zScorer(pool.map(inputs[k]))
+      scorers[k] = (c) => z(inputs[k](c))
+      continue
+    }
+    const byGroup = new Map()
+    for (const g of new Set(pool.map(groupOf))) byGroup.set(g, zScorer(pool.filter((c) => groupOf(c) === g).map(inputs[k])))
+    scorers[k] = (c) => byGroup.get(groupOf(c))(inputs[k](c))
+  }
   for (const c of pool) {
-    const parts = Object.fromEntries(Object.keys(inputs).map((k) => [k, weights[k] * z[k](inputs[k](c))]))
+    const parts = Object.fromEntries(Object.keys(inputs).map((k) => [k, weights[k] * scorers[k](c)]))
     const composite = Object.values(parts).reduce((a, b) => a + b, 0) + extra(c)
     c.score = Math.round(Math.max(0, Math.min(100, 50 + 15 * composite)) * 10) / 10
     c.top = Object.entries(parts).sort((a, b) => b[1] - a[1])[0]
@@ -928,7 +950,14 @@ async function buildMvpNfl(input) {
   }
   if (!pool.length) throw new Error('no qualified NFL candidates yet')
   const w = MVP_WEIGHTS.nfl
-  const ranked = rankMvp(pool, { epa: (c) => c.epa, prod: (c) => c.prod, win: (c) => c.win }, w, (c) => (c.qb ? 0 : w.nonQb))
+  // EPA and production are compared within position (QB, RB, WR/TE): receivers pile up far
+  // more raw EPA than backs, so a shared pool buries even a 2,000-yard rushing season.
+  const group = (c) => (c.qb ? 'QB' : c.pos === 'RB' || c.pos === 'FB' ? 'RB' : 'REC')
+  const ranked = rankMvp(pool, { epa: (c) => c.epa, prod: (c) => c.prod, win: (c) => c.win }, w, {
+    extra: (c) => (c.qb ? 0 : w.nonQb),
+    groupOf: group,
+    grouped: ['epa', 'prod'],
+  })
   const epaLeader = Math.max(...pool.map((c) => c.epa))
   const out = ranked.map(({ qb, prod, top, ...c }) => ({
     ...c,

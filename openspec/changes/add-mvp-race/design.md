@@ -44,14 +44,15 @@ Each input is z-normalized against a reference pool of plausible candidates, the
 
 - Reference pools:
   - NBA: players averaging 25+ minutes per game.
-  - NFL: the qualified QB plus skill-player pool. Non-QBs are z-scored in the same pool, so their lower raw EPA already counts against them.
+  - NFL: total EPA and production are z-scored **within position groups** (QB, RB/FB, WR/TE), so each player is measured against their own position. Team win % is z-scored across all candidates. A flat non-QB adjustment then reflects voters' QB preference.
+  - *Why not one shared pool:* backtesting showed that receivers rack up far more raw EPA than running backs. A shared pool left Barkley's 2,005-yard 2024 season at #20, and lowering the adjustment just pulled receivers into the top 10 instead.
 - **NBA** composite = 0.55·z(production) + 0.20·z(efficiency) + 0.25·z(team win %).
   - **Production:** Game Score per game, approximated as PTS + 0.4·FGM − 0.7·FGA − 0.4·(FTA−FTM) + 0.35·REB + STL + 0.7·AST + 0.7·BLK − 0.4·PF − TOV. The approximation is needed because byathlete doesn't split offensive and defensive rebounds.
   - **Efficiency:** points added over league-average shooting per game, 2·(TS − lgTS)·TSA, where lgTS comes from the totals of all players.
-- **NFL** composite = 0.50·z(total EPA) + 0.20·z(production) + 0.30·z(team win %) − 0.8 for non-QBs.
+- **NFL** composite = 0.50·z(total EPA) + 0.20·z(production) + 0.30·z(team win %) − 1.0 for non-QBs (EPA and production z-scored within position group).
   - **Total EPA:** dropback EPA (sacks and scrambles included) plus designed-run EPA for QBs; receiving plus rushing EPA for skill players.
   - **Production:** scrimmage yards + 20·TD − 45·(INT + fumbles lost).
-  - **Why −0.8:** a QB has won 15 of the last 17 MVPs (12 of 13 since 2013), but a historic RB season, like a 2,000-yard rusher, should still reach the top 10. Check this against last season's data during implementation.
+  - **Why −1.0:** a QB has won 15 of the last 17 MVPs (12 of 13 since 2013), but a historic RB season, like a 2,000-yard rusher, should still reach the top 10. Backtest: −0.8 put four non-QBs in the 2024 top 10, −1.2 left Barkley's 2,005-yard season only 10th, and −1.0 has him 5th (3rd in the real vote) with no non-QB in the 2025 top 10.
 - The `reason` field names the factor with the largest weighted positive contribution, e.g. "Team record (12-2)", "Elite production", "Most efficient scorer", "Leads league in EPA".
 - *Alternative:* rank by a single public metric (QBR or PER). Rejected: neither accounts for team success, which voters weight heavily.
 
