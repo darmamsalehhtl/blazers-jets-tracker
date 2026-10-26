@@ -866,7 +866,7 @@ async function buildMvp(nflInput) {
   const [nfl, nba] = await Promise.allSettled([buildMvpNfl(await nflInput().catch(() => null)), buildMvpNba()])
   const wrap = (r) => {
     if (r.status !== 'fulfilled') return { available: false, error: String(r.reason?.message ?? r.reason) }
-    const { extra, ...league } = r.value
+    const { extra: _extra, ...league } = r.value
     return league
   }
   const extra = (r) => (r.status === 'fulfilled' ? r.value.extra : { error: String(r.reason?.message ?? r.reason) })
