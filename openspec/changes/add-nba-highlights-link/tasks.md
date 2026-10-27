@@ -46,7 +46,7 @@
 
 ## 3. Integration check
 
-- [ ] 3.1 Push, and confirm the Deploy workflow passes. Then check the deployed `data/nba-games.json` and record in the change's design.md Open Questions whether CI could reach NBA.com (available + game count) or not (error).
+- [x] 3.1 Push, and confirm the Deploy workflow passes. Then check the deployed `data/nba-games.json` and record in the change's design.md Open Questions whether CI could reach NBA.com (available + game count) or not (error).
   - **If it is available:** open a finished Blazers game on the live site and confirm the link's `href` is the direct NBA.com game URL with the right teams and date.
   - **If not:** confirm the live link falls back to the correct day page.
 

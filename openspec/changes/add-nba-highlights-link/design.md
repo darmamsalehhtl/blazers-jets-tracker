@@ -73,3 +73,6 @@ Additive: one new data file, one component and one lib module. Rollback is rever
 ## Open Questions
 
 - Does NBA.com's feed reach GitHub Actions runners or the user's browser? This is answered by the deploy check in the tasks. It changes only which path the link uses, not the design.
+  - **Result (2026-10-27, first deploy):** GitHub Actions gets `403` from `cdn.nba.com`, so `nba-games.json` is `available: false`.
+  - In a browser on the live site, the feed request is refused by CORS (no `Access-Control-Allow-Origin`; tested from a network NBA.com also blocks, so a normal home connection may differ).
+  - The live link therefore uses the day-page fallback ("Find it on NBA.com"), which was verified correct. The direct link switches on by itself if either source starts working.
