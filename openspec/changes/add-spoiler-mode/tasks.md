@@ -23,7 +23,7 @@
   - render `SpoilerNote` for Standings, News, the TeamOverview results list and points by game, BlazersAdvanced "Net rating by game", `PlayerGamelog`, and PlayerOverview "Game by game" / "Last 5 games"
 
   Verify each of these spots in the browser with spoilers off, and that "Show spoilers" in a note turns spoilers on everywhere. Also check that the Stats, Advanced (other cards), Players, vs League, Roster, Draft, MVP pages and player search look unchanged. Commit ("Hide records, standings, game logs and news while spoilers are off").
-- [ ] 3.4 Re-run the audit search from the design (`scoreText`, `winner`, `recordText`, `recordSummary`, `standingSummary`, `gameResult`, `wins`) over `src/` and confirm each hit is either gated by the spoiler state or on the keep-visible list (live games, MVP, Draft, season totals). Fix any gaps and verify the search again.
+- [x] 3.4 Re-run the audit search from the design (`scoreText`, `winner`, `recordText`, `recordSummary`, `standingSummary`, `gameResult`, `wins`) over `src/` and confirm each hit is either gated by the spoiler state or on the keep-visible list (live games, MVP, Draft, season totals). Fix any gaps and verify the search again.
 
 ## 4. Docs and integration check
 
