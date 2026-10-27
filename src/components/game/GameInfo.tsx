@@ -16,6 +16,8 @@ export function GameInfo({ s, team }: { s: Summary; team: TeamConfig }) {
   const gi = s.gameInfo
   const series = s.seasonseries?.[0]
   const { show, canShow } = useSpoilers()
+  // Recaps in the coverage give the result away.
+  const gameShown = canShow({ id: s.header.id, state: comp.status.type.state })
 
   return (
     <div className="space-y-3">
@@ -142,7 +144,7 @@ export function GameInfo({ s, team }: { s: Summary; team: TeamConfig }) {
         </dl>
       </Card>
 
-      {s.news?.articles?.length ? (
+      {gameShown && s.news?.articles?.length ? (
         <Card title="Coverage" pad={false}>
           <ul>
             {s.news.articles.slice(0, 6).map((a, i) => (

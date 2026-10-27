@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { urls } from '../../lib/espn'
+import { useSpoilers } from '../../lib/spoilers'
 import type { Summary } from '../../lib/summary'
 import { TEAMS, type TeamKey } from '../../lib/teams'
 import { usePoll } from '../../lib/usePoll'
@@ -26,14 +27,19 @@ export function GameView({ teamKey, eventId }: { teamKey: TeamKey; eventId: stri
   })
   const state = s?.header.competitions[0].status.type.state
   const [tab, setTab] = useState<Tab | null>(null)
+  const { canShow } = useSpoilers()
 
   if (loading && !s) return <Spinner label="Loading game" />
   if (error && !s) return <ErrorBox error={error} retry={refresh} />
   if (!s) return null
 
+  // A finished game with spoilers off: only the matchup and its info until revealed.
+  const hidden = !canShow({ id: eventId, state })
   const tabs: { id: Tab; label: string }[] =
     state === 'pre'
       ? [{ id: 'info', label: 'Preview' }]
+      : hidden
+        ? [{ id: 'info', label: 'Info' }]
       : [
           { id: 'box', label: 'Box score' },
           { id: 'team', label: 'Team stats' },
@@ -46,14 +52,16 @@ export function GameView({ teamKey, eventId }: { teamKey: TeamKey; eventId: stri
 
   return (
     <div className="space-y-3">
-      <Scoreboard s={s} team={team} />
+      <Scoreboard s={s} team={team} hidden={hidden} />
       <div className="flex justify-end">
         <Updated at={updatedAt} live={state === 'in'} />
       </div>
-      <div className="grid gap-3 lg:grid-cols-2 lg:items-start">
-        <WinProbChart s={s} team={team} />
-        <GameLeaders s={s} team={team} />
-      </div>
+      {!hidden && (
+        <div className="grid gap-3 lg:grid-cols-2 lg:items-start">
+          <WinProbChart s={s} team={team} />
+          <GameLeaders s={s} team={team} />
+        </div>
+      )}
       <Tabs tabs={tabs} value={active} onChange={setTab} />
       {active === 'box' && <BoxScore s={s} team={team} />}
       {active === 'team' && <TeamCompare s={s} />}

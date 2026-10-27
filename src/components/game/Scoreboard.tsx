@@ -3,9 +3,10 @@ import { recordText, scoreText, teamLogo, type Competitor } from '../../lib/espn
 import { countdown, gameDate } from '../../lib/format'
 import { liveSituation, periodLabel, type Summary } from '../../lib/summary'
 import type { TeamConfig } from '../../lib/teams'
-import { LiveBadge, Logo } from '../ui'
+import { HiddenScore, LiveBadge, Logo } from '../ui'
 
-export function Scoreboard({ s, team }: { s: Summary; team: TeamConfig }) {
+/** `hidden`: a finished game while spoilers are off — matchup and "Final" only, no score, records or line score. */
+export function Scoreboard({ s, team, hidden = false }: { s: Summary; team: TeamConfig; hidden?: boolean }) {
   const comp = s.header.competitions[0]
   const away = comp.competitors.find((c) => c.homeAway === 'away')!
   const home = comp.competitors.find((c) => c.homeAway === 'home')!
@@ -24,6 +25,10 @@ export function Scoreboard({ s, team }: { s: Summary; team: TeamConfig }) {
           <span>
             {gameDate(comp.date)} · starts in {countdown(comp.date)}
           </span>
+        ) : hidden ? (
+          <span>
+            <span className="font-semibold text-text">Final</span> · {gameDate(comp.date, { withTime: false })}
+          </span>
         ) : (
           <span className="font-semibold text-text">{st.detail}</span>
         )}
@@ -31,14 +36,20 @@ export function Scoreboard({ s, team }: { s: Summary; team: TeamConfig }) {
       </div>
 
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 pb-4">
-        <Side c={away} align="left" state={st.state} possession={situation?.possession} />
+        <Side c={away} align="left" state={st.state} possession={situation?.possession} hidden={hidden} />
         <div className="text-center text-xs text-muted">{st.state === 'pre' ? (odds?.details ?? 'vs') : '–'}</div>
-        <Side c={home} align="right" state={st.state} possession={situation?.possession} />
+        <Side c={home} align="right" state={st.state} possession={situation?.possession} hidden={hidden} />
       </div>
 
       {st.state === 'in' && team.league === 'nfl' && situation && <FootballSituation s={s} />}
 
-      {st.state !== 'pre' && <LineScore away={away} home={home} />}
+      {hidden ? (
+        <div className="flex justify-center border-t border-border px-4 py-3">
+          <HiddenScore id={s.header.id} />
+        </div>
+      ) : (
+        st.state !== 'pre' && <LineScore away={away} home={home} />
+      )}
     </div>
   )
 }
@@ -48,13 +59,15 @@ function Side({
   align,
   state,
   possession,
+  hidden,
 }: {
   c: Competitor
   align: 'left' | 'right'
   state: string
   possession?: string
+  hidden: boolean
 }) {
-  const lost = state === 'post' && c.winner === false
+  const lost = state === 'post' && c.winner === false && !hidden
   const hasBall = state === 'in' && (possession === c.team.id || c.possession)
   const logo = (
     <Link to={teamPath(c)} className="shrink-0">
@@ -71,7 +84,7 @@ function Side({
           {align === 'left' && hasBall && <Ball />}
         </div>
         <div className="text-[11px] text-muted">{recordText(c)}</div>
-        {state !== 'pre' && (
+        {state !== 'pre' && !hidden && (
           <div className={`text-4xl leading-tight font-bold tracking-tight tabular-nums ${lost ? 'text-muted' : ''}`}>
             {scoreText(c.score)}
           </div>
