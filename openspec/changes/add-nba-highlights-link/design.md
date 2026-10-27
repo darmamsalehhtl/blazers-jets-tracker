@@ -35,7 +35,7 @@ A new `nba-games` builder fetches the schedule feed once per build (every 3 h) a
 - Only regular season, play-in, playoffs and preseason games with real teams are included. All-Star and TBD games are skipped.
 - That is about 1,300 entries ≈ 55 KB (≈ 10 KB gzipped).
 
-The build sends the browser-like headers it already uses (`UA`) plus `Referer: https://www.nba.com/`. If NBA.com refuses, the file is written as `available: false` with the error, like any failing builder, and the rest of the build is unaffected.
+The build requests the feed honestly, with the project's normal user agent and no faked browser or `Referer` headers: it must not try to get around NBA.com's bot protection. If NBA.com refuses, the file is written as `available: false` with the error, like any failing builder, and the rest of the build is unaffected.
 
 - *Alternative:* fetching the schedule only in the browser. Rejected as the primary source: 5 MB on a phone for one link, and CORS is unknown.
 - *Alternative:* computing the id. Rejected: ids are sequential by NBA scheduling order, which can't be derived from ESPN data.

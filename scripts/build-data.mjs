@@ -16,6 +16,10 @@
 //              Built from the same MVP run as mvp.json, so ranks always agree.
 //   draft.json – inputs for the live NFL draft order: every team's schedule
 //              (for strength of schedule) and the traded picks for next draft.
+//   nba-games.json – NBA.com's game page path for every game of the season
+//              ("sac-vs-por-0022600012"), keyed by Eastern date + ESPN team
+//              codes, so finished games can link to their highlights/replay.
+//              NBA_SCHEDULE_FILE=path reads a saved feed instead (for testing).
 //
 // Each part fails independently: if a source is down, that file records the
 // error and the app shows a notice instead of breaking the build.
@@ -54,6 +58,7 @@ async function main() {
     'players-nfl': async () => buildPlayerIndex('nfl', await mvpOnce()),
     'players-nba': async () => buildPlayerIndex('nba', await mvpOnce()),
     draft: buildDraft,
+    'nba-games': buildNbaGames,
   }
   const names = Object.keys(builders).filter((n) => !only || only.includes(n))
   const results = await Promise.allSettled(names.map((n) => builders[n]()))
@@ -1333,6 +1338,50 @@ async function fetchDraftTrades(year) {
   }
   if (trades.length < 5) throw new Error(`only ${trades.length} trades parsed`)
   return trades
+}
+
+// ------------------------------------------------------------------ NBA.com game ids
+
+const NBA_SCHEDULE = 'https://cdn.nba.com/static/json/staticData/scheduleLeagueV2.json'
+// NBA.com tricode → ESPN abbreviation where they differ (also in src/lib/nbaLink.ts).
+const NBA_TO_ESPN = { GSW: 'GS', NOP: 'NO', NYK: 'NY', SAS: 'SA', UTA: 'UTAH', WAS: 'WSH' }
+const ESPN_NBA = new Set(
+  'ATL BOS BKN CHA CHI CLE DAL DEN DET GS HOU IND LAC LAL MEM MIA MIL MIN NO NY OKC ORL PHI PHX POR SAC SA TOR UTAH WSH'.split(' '),
+)
+
+/** YYYY-MM-DD of an instant in US Eastern time, the date NBA.com files games under. */
+function easternDate(iso) {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date(iso))
+}
+
+async function buildNbaGames() {
+  const feed = process.env.NBA_SCHEDULE_FILE
+    ? JSON.parse(await readFile(process.env.NBA_SCHEDULE_FILE, 'utf8'))
+    : await getJSON(NBA_SCHEDULE)
+  return nbaGameMap(feed)
+}
+
+function nbaGameMap(feed) {
+  const ls = feed?.leagueSchedule
+  if (!Array.isArray(ls?.gameDates)) throw new Error('NBA schedule feed: no leagueSchedule.gameDates')
+  const games = {}
+  const unknown = new Set()
+  for (const g of ls.gameDates.flatMap((d) => d.games ?? [])) {
+    const away = g.awayTeam?.teamTricode
+    const home = g.homeTeam?.teamTricode
+    if (!g.gameId || !g.gameDateTimeUTC || !away || !home) continue
+    const [a, h] = [away, home].map((t) => NBA_TO_ESPN[t] ?? t)
+    // All-Star and other exhibition teams aren't NBA franchises; skip those games.
+    if (!ESPN_NBA.has(a) || !ESPN_NBA.has(h)) {
+      for (const [t, e] of [[away, a], [home, h]]) if (!ESPN_NBA.has(e)) unknown.add(t)
+      continue
+    }
+    games[`${easternDate(g.gameDateTimeUTC)}|${a}|${h}`] = `${away.toLowerCase()}-vs-${home.toLowerCase()}-${g.gameId}`
+  }
+  const count = Object.keys(games).length
+  if (!count) throw new Error('NBA schedule feed: no games')
+  if (unknown.size) console.log(`nba-games: skipped games with non-NBA tricodes ${[...unknown].join(', ')}`)
+  return { available: true, season: ls.seasonYear, count, games }
 }
 
 main().catch((e) => {

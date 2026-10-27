@@ -2,8 +2,8 @@
 
 ## 1. NBA.com game ids in the data build
 
-- [ ] 1.1 Add the `nba-games` builder to `scripts/build-data.mjs` (design decisions 1 and 4):
-  - fetch the schedule feed with the browser headers plus `Referer`
+- [x] 1.1 Add the `nba-games` builder to `scripts/build-data.mjs` (design decisions 1 and 4):
+  - fetch the schedule feed with the project's normal user agent (no faked browser or `Referer` headers)
   - map tricodes to ESPN codes
   - key games by Eastern date, away and home
   - skip All-Star/TBD games
@@ -11,9 +11,9 @@
   - validate the fields and fail cleanly
 
   Document it in the file's header comment and the README data list. Verify locally:
-  - `ONLY=nba-games node scripts/build-data.mjs` writes `nba-games.json` with `available: false` and the Access Denied error, since NBA.com blocks this machine
+  - don't request NBA.com from this machine, which is blocked
   - the other files are not touched
-  - feeding the builder a small saved fixture in the feed's documented shape produces the expected keys, including the GSW→GS and NYK→NY cases and a 10:30 PM ET tip-off keyed to the Eastern date
+  - `NBA_SCHEDULE_FILE=<fixture> ONLY=nba-games` with a small saved fixture in the feed's documented shape produces the expected keys, including the GSW→GS and NYK→NY cases and a 10:30 PM ET tip-off keyed to the Eastern date
 
   Commit ("Build NBA.com game id map").
 
