@@ -28,7 +28,7 @@
 ## 4. Docs and integration check
 
 - [x] 4.1 Add spoiler mode to the README feature list and the CLAUDE.md requirements (new result displays must respect the spoiler state). Run `npm run lint` and `npm run build` and verify both pass. Commit ("Document spoiler mode").
-- [ ] 4.2 End-to-end in Playwright, at 1200 px light and again at 390 px dark, with no console errors:
+- [x] 4.2 End-to-end in Playwright, at 1200 px light and again at 390 px dark, with no console errors:
   1. Start from a fresh profile and check that no final score is visible on Home, the Jets and Blazers pages (all tabs), a past game, a player page, and the Live tab.
   2. Reveal one game, reload, and check that it is still revealed and others aren't.
   3. Toggle spoilers on and check that the scores, records and standings appear, then reload and check that they stay on.
