@@ -4,6 +4,7 @@ import { countdown, gameDate } from '../../lib/format'
 import { liveSituation, periodLabel, type Summary } from '../../lib/summary'
 import type { TeamConfig } from '../../lib/teams'
 import { HiddenScore, LiveBadge, Logo } from '../ui'
+import { useSpoilers } from '../../lib/spoilers'
 
 /** `hidden`: a finished game while spoilers are off — matchup and "Final" only, no score, records or line score. */
 export function Scoreboard({ s, team, hidden = false }: { s: Summary; team: TeamConfig; hidden?: boolean }) {
@@ -68,6 +69,7 @@ function Side({
   hidden: boolean
 }) {
   const lost = state === 'post' && c.winner === false && !hidden
+  const { show } = useSpoilers()
   const hasBall = state === 'in' && (possession === c.team.id || c.possession)
   const logo = (
     <Link to={teamPath(c)} className="shrink-0">
@@ -83,7 +85,7 @@ function Side({
           {c.team.abbreviation}
           {align === 'left' && hasBall && <Ball />}
         </div>
-        <div className="text-[11px] text-muted">{recordText(c)}</div>
+        {show && <div className="text-[11px] text-muted">{recordText(c)}</div>}
         {state !== 'pre' && !hidden && (
           <div className={`text-4xl leading-tight font-bold tracking-tight tabular-nums ${lost ? 'text-muted' : ''}`}>
             {scoreText(c.score)}

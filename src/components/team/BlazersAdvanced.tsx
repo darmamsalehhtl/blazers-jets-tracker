@@ -8,7 +8,8 @@ import type { TeamConfig } from '../../lib/teams'
 import { timeAgo } from '../../lib/format'
 import { ShotChart } from '../ShotChart'
 import { StatTable, type Column } from '../StatTable'
-import { Card, Empty, Select, Stat } from '../ui'
+import { Card, Empty, Select, SpoilerNote, Stat } from '../ui'
+import { useSpoilers } from '../../lib/spoilers'
 
 const p1 = (v: number | null) => (v === null ? '–' : `${(v * 100).toFixed(1)}%`)
 const n1 = (v: number | null) => (v === null ? '–' : v.toFixed(1))
@@ -19,6 +20,7 @@ export function toShots(rows: BlazersData['shots'] | BlazersData['oppShots']): S
 }
 
 export function BlazersAdvanced({ team, data }: { team: TeamConfig; data: BlazersData }) {
+  const { show } = useSpoilers()
   if (!data.available) return <Empty>Season analytics aren't available right now ({data.error}).</Empty>
   const t = data.totals
   return (
@@ -33,22 +35,26 @@ export function BlazersAdvanced({ team, data }: { team: TeamConfig; data: Blazer
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             <Stat label="Offensive rating" value={n1(t.ortg)} sub="pts / 100 possessions" />
             <Stat label="Defensive rating" value={n1(t.drtg)} sub="allowed / 100 poss." />
-            <Stat label="Net rating" value={sgn(t.ortg - t.drtg)} sub={`${t.wins}-${t.gp - t.wins} record`} />
+            <Stat label="Net rating" value={sgn(t.ortg - t.drtg)} sub={show ? `${t.wins}-${t.gp - t.wins} record` : 'pts / 100 poss.'} />
             <Stat label="Pace" value={n1(t.pace)} sub="possessions / 48 min" />
-            <Stat label="Home" value={`${t.home.w}-${t.home.l}`} sub={`${sgn(t.home.net)} per game`} />
-            <Stat label="Away" value={`${t.away.w}-${t.away.l}`} sub={`${sgn(t.away.net)} per game`} />
-            <Stat
-              label="Clutch games"
-              value={`${t.clutch.wins}-${t.clutch.losses}`}
-              sub={`${t.clutch.pf}-${t.clutch.pa} in clutch time`}
-            />
+            {show && (
+              <>
+                <Stat label="Home" value={`${t.home.w}-${t.home.l}`} sub={`${sgn(t.home.net)} per game`} />
+                <Stat label="Away" value={`${t.away.w}-${t.away.l}`} sub={`${sgn(t.away.net)} per game`} />
+                <Stat
+                  label="Clutch games"
+                  value={`${t.clutch.wins}-${t.clutch.losses}`}
+                  sub={`${t.clutch.pf}-${t.clutch.pa} in clutch time`}
+                />
+              </>
+            )}
             <Stat label="Scoring" value={`${n1(t.ppg)}`} sub={`allowed ${n1(t.oppg)}`} />
           </div>
           <FourFactors us={t.us} opp={t.opp} />
           {t.quarters && <Quarters q={t.quarters} />}
         </>
       )}
-      <NetRatingChart team={team} data={data} />
+      {show ? <NetRatingChart team={team} data={data} /> : <SpoilerNote what="Net rating by game and home/away records are" />}
       <SeasonShots team={team} data={data} />
       <PlayerAdvancedTable team={team} players={data.players} />
       <p className="px-1 text-[11px] text-muted">

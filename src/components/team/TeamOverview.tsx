@@ -6,7 +6,8 @@ import { findEntry, sv, type StandingsNode } from '../../lib/standings'
 import type { TeamConfig } from '../../lib/teams'
 import { IDLE_MS, usePoll } from '../../lib/usePoll'
 import { StatusPill } from '../game/GameInfo'
-import { Card, Headshot, LiveBadge, Logo, Stat } from '../ui'
+import { Card, Headshot, LiveBadge, Logo, SpoilerNote, Stat } from '../ui'
+import { useSpoilers } from '../../lib/spoilers'
 import type { RosterResponse } from './TeamRoster'
 
 export function completed(events: EspnEvent[]) {
@@ -34,6 +35,7 @@ export function TeamOverview({ team, schedule }: { team: TeamConfig; schedule: S
   const pf = results.reduce((a, r) => a + r.pf, 0)
   const pa = results.reduce((a, r) => a + r.pa, 0)
   const n = results.length || 1
+  const { show } = useSpoilers()
 
   return (
     <div className="space-y-3">
@@ -41,40 +43,43 @@ export function TeamOverview({ team, schedule }: { team: TeamConfig; schedule: S
 
       {results.length > 0 && (
         <>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <Stat label="Record" value={`${results.filter((r) => r.res === 'W').length}-${results.filter((r) => r.res === 'L').length}`} sub={label} />
+          <div className={`grid gap-2 ${show ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'}`}>
+            {show && <Stat label="Record" value={`${results.filter((r) => r.res === 'W').length}-${results.filter((r) => r.res === 'L').length}`} sub={label} />}
             <Stat label="PPG" value={(pf / n).toFixed(1)} sub="points scored" />
             <Stat label="Opp PPG" value={(pa / n).toFixed(1)} sub="points allowed" />
             <Stat label="Margin" value={`${pf - pa >= 0 ? '+' : ''}${((pf - pa) / n).toFixed(1)}`} sub="per game" />
           </div>
 
-          <Card title={`Results · ${label}`}>
-            <div className="no-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
-              {results
-                .slice()
-                .reverse()
-                .map((r) => (
-                  <Link
-                    key={r.e.id}
-                    to={`/game/${team.key}/${r.e.id}`}
-                    className="flex w-16 shrink-0 flex-col items-center gap-1 rounded-xl bg-surface-2 px-1 py-2 text-center"
-                  >
-                    <Logo src={teamLogo(r.them.team)} alt={r.them.team.abbreviation} size={22} />
-                    <span className={`text-xs font-bold ${r.res === 'W' ? 'text-good' : r.res === 'L' ? 'text-bad' : 'text-muted'}`}>{r.res}</span>
-                    <span className="text-[11px] tabular-nums">
-                      {r.pf}-{r.pa}
-                    </span>
-                    <span className="text-[10px] text-muted">{shortDate(r.e.date)}</span>
-                  </Link>
-                ))}
-            </div>
-          </Card>
-
-          <ScoringTrend team={team} results={results} />
+          {show ? (
+            <Card title={`Results · ${label}`}>
+              <div className="no-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
+                {results
+                  .slice()
+                  .reverse()
+                  .map((r) => (
+                    <Link
+                      key={r.e.id}
+                      to={`/game/${team.key}/${r.e.id}`}
+                      className="flex w-16 shrink-0 flex-col items-center gap-1 rounded-xl bg-surface-2 px-1 py-2 text-center"
+                    >
+                      <Logo src={teamLogo(r.them.team)} alt={r.them.team.abbreviation} size={22} />
+                      <span className={`text-xs font-bold ${r.res === 'W' ? 'text-good' : r.res === 'L' ? 'text-bad' : 'text-muted'}`}>{r.res}</span>
+                      <span className="text-[11px] tabular-nums">
+                        {r.pf}-{r.pa}
+                      </span>
+                      <span className="text-[10px] text-muted">{shortDate(r.e.date)}</span>
+                    </Link>
+                  ))}
+              </div>
+            </Card>
+          ) : (
+            <SpoilerNote what="Results, points by game and the standings snapshot are" />
+          )}
+          {show && <ScoringTrend team={team} results={results} />}
         </>
       )}
 
-      <StandingSnapshot team={team} season={schedule.season.year} />
+      {show && <StandingSnapshot team={team} season={schedule.season.year} />}
       <Injuries team={team} />
     </div>
   )

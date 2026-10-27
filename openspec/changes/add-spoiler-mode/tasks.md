@@ -18,7 +18,7 @@
 
 - [x] 3.1 Game lists: hide the score and W/L of unrevealed finished games, with a "Show score" control that reveals in place without navigating (design decision 3). Covers `TeamCard`, `TeamSchedule`, `TeamOverview` (last game and results), `LivePage` chips, and the `GameInfo` season series. Verify with spoilers off that the Jets schedule shows finished games as "Final" without score or colors, that "Show score" on one row reveals only that row and doesn't open the game, and that the same game then shows its score on the Home team card. Commit ("Hide finished-game scores while spoilers are off").
 - [x] 3.2 Finished game page: add a hidden mode to `GameView` and `Scoreboard`. It shows "Final" with no score, records or line score, plus a "Show score" button and only the Info tab without the series scores (design decision 4). Verify that opening a past Jets game and a past Blazers game with spoilers off shows no score, box score, win probability or leaders; that "Show score" reveals the full page; and that a live game (or a game mocked as `in`) still shows everything. Commit ("Hide finished game pages until revealed").
-- [ ] 3.3 Records and whole sections (design decision 6):
+- [x] 3.3 Records and whole sections (design decision 6):
   - omit records in the team page header, team card, row subtitles, opponent records, the scoreboard, the TeamOverview "Record" stat, and BlazersAdvanced home/away and its record subtitle
   - render `SpoilerNote` for Standings, News, the TeamOverview results list and points by game, BlazersAdvanced "Net rating by game", `PlayerGamelog`, and PlayerOverview "Game by game" / "Last 5 games"
 

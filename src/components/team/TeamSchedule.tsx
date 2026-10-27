@@ -5,6 +5,7 @@ import { gameDate } from '../../lib/format'
 import type { TeamConfig } from '../../lib/teams'
 import { IDLE_MS, usePoll } from '../../lib/usePoll'
 import { Card, Empty, HiddenScore, LiveBadge, Logo, Select, Spinner, useGameResult } from '../ui'
+import { useSpoilers } from '../../lib/spoilers'
 
 const TYPES = [
   { value: 2, label: 'Regular season' },
@@ -62,6 +63,7 @@ function ScheduleRow({ team, e }: { team: TeamConfig; e: EspnEvent }) {
   const { us, them } = sides(comp, team.id)
   const st = comp.status.type
   const shown = useGameResult(e, team.id)
+  const { show } = useSpoilers()
   const tv = comp.broadcasts?.[0]?.media?.shortName
   return (
     <li className="flex items-center border-t border-border/60 first:border-0 hover:bg-surface-2">
@@ -76,7 +78,7 @@ function ScheduleRow({ team, e }: { team: TeamConfig; e: EspnEvent }) {
             {us.homeAway === 'home' ? 'vs' : '@'} {them.team.displayName}
           </div>
           <div className="truncate text-xs text-muted">
-            {st.state === 'pre' ? `${new Date(e.date).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}${tv ? ` · ${tv}` : ''}` : recordText(us) ? `${team.abbr} ${recordText(us)}` : ''}
+            {st.state === 'pre' ? `${new Date(e.date).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}${tv ? ` · ${tv}` : ''}` : show && recordText(us) ? `${team.abbr} ${recordText(us)}` : ''}
             {comp.notes?.[0]?.headline && ` · ${comp.notes[0].headline}`}
           </div>
         </div>

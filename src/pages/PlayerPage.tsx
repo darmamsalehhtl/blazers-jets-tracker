@@ -7,7 +7,8 @@ import { PlayerGamelog } from '../components/player/PlayerGamelog'
 import { PlayerOverview } from '../components/player/PlayerOverview'
 import { PlayerSplits } from '../components/player/PlayerSplits'
 import { StatusPill } from '../components/game/GameInfo'
-import { ErrorBox, Headshot, Logo, Spinner, Tabs } from '../components/ui'
+import { ErrorBox, Headshot, Logo, SpoilerNote, Spinner, Tabs } from '../components/ui'
+import { useSpoilers } from '../lib/spoilers'
 import { headshotUrl, teamLogo, urls } from '../lib/espn'
 import type { AthleteBio } from '../lib/player'
 import { isTeamKey, TEAMS } from '../lib/teams'
@@ -25,6 +26,7 @@ type TabId = (typeof TABS)[number]['id']
 export default function PlayerPage() {
   const { team: key, athleteId } = useParams()
   const [params, setParams] = useSearchParams()
+  const { show } = useSpoilers()
   const tab = (TABS.find((t) => t.id === params.get('tab'))?.id ?? 'overview') as TabId
   const team = isTeamKey(key) ? TEAMS[key] : undefined
   const bio = usePoll<AthleteBio>(team && athleteId ? urls.athlete(team, athleteId) : null, IDLE_MS)
@@ -91,7 +93,7 @@ export default function PlayerPage() {
       <Tabs tabs={TABS.map((t) => ({ id: t.id, label: t.label }))} value={tab} onChange={(id) => setParams(id === 'overview' ? {} : { tab: id }, { replace: true })} />
 
       {tab === 'overview' && <PlayerOverview team={team} id={athleteId} bio={bio.data} />}
-      {tab === 'gamelog' && <PlayerGamelog team={team} id={athleteId} />}
+      {tab === 'gamelog' && (show ? <PlayerGamelog team={team} id={athleteId} /> : <SpoilerNote what="The game log is" />)}
       {tab === 'splits' && <PlayerSplits team={team} id={athleteId} />}
       {tab === 'career' && <PlayerCareer team={team} id={athleteId} />}
       {tab === 'advanced' && <PlayerAdvanced team={team} id={athleteId} name={a.displayName} />}

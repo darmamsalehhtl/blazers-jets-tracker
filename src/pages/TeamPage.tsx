@@ -9,7 +9,8 @@ import { TeamStandings } from '../components/team/TeamStandings'
 import { TeamStats } from '../components/team/TeamStats'
 import { TeamVsLeague } from '../components/team/TeamVsLeague'
 import { PlayerSearch } from '../components/PlayerSearch'
-import { ErrorBox, Logo, Spinner, Tabs } from '../components/ui'
+import { ErrorBox, Logo, SpoilerNote, Spinner, Tabs } from '../components/ui'
+import { useSpoilers } from '../lib/spoilers'
 import { urls, type ScheduleResponse } from '../lib/espn'
 import { isTeamKey, TEAMS } from '../lib/teams'
 import { IDLE_MS, usePoll } from '../lib/usePoll'
@@ -30,6 +31,7 @@ type TabId = (typeof TABS)[number]['id']
 export default function TeamPage() {
   const { team: key } = useParams()
   const [params, setParams] = useSearchParams()
+  const { show } = useSpoilers()
   const tab = (TABS.find((t) => t.id === params.get('tab'))?.id ?? 'overview') as TabId
   const team = isTeamKey(key) ? TEAMS[key] : undefined
   const sched = usePoll<ScheduleResponse>(team ? urls.schedule(team) : null, IDLE_MS)
@@ -46,8 +48,13 @@ export default function TeamPage() {
           <p className="text-sm text-muted">
             {s ? (
               <>
-                <span className="font-semibold text-text">{s.team.recordSummary ?? '0-0'}</span>
-                {s.team.standingSummary && ` · ${s.team.standingSummary}`} · {s.season.displayName} {s.season.name}
+                {show && (
+                  <>
+                    <span className="font-semibold text-text">{s.team.recordSummary ?? '0-0'}</span>
+                    {s.team.standingSummary && ` · ${s.team.standingSummary}`} ·{' '}
+                  </>
+                )}
+                {s.season.displayName} {s.season.name}
               </>
             ) : (
               '…'
@@ -74,8 +81,8 @@ export default function TeamPage() {
           {tab === 'players' && <TeamPlayers team={team} />}
           {tab === 'league' && <TeamVsLeague team={team} />}
           {tab === 'roster' && <TeamRoster team={team} />}
-          {tab === 'standings' && <TeamStandings team={team} season={s.season.year} />}
-          {tab === 'news' && <TeamNews team={team} />}
+          {tab === 'standings' && (show ? <TeamStandings team={team} season={s.season.year} /> : <SpoilerNote what="Standings are" />)}
+          {tab === 'news' && (show ? <TeamNews team={team} /> : <SpoilerNote what="News headlines are" />)}
         </>
       )}
     </div>

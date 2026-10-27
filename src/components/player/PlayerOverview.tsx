@@ -6,7 +6,8 @@ import { shortDate } from '../../lib/format'
 import { gamelogRows, parsePair, rolling, type AthleteBio, type GamelogResponse, type GameRow } from '../../lib/player'
 import type { TeamConfig } from '../../lib/teams'
 import { IDLE_MS, usePoll } from '../../lib/usePoll'
-import { Card, Empty, Select, Spinner } from '../ui'
+import { Card, Empty, Select, SpoilerNote, Spinner } from '../ui'
+import { useSpoilers } from '../../lib/spoilers'
 
 export function numeric(v: string | undefined) {
   if (v === undefined) return NaN
@@ -17,6 +18,7 @@ export function numeric(v: string | undefined) {
 export function PlayerOverview({ team, id, bio }: { team: TeamConfig; id: string; bio: AthleteBio }) {
   const log = usePoll<GamelogResponse>(urls.athleteGamelog(team, id), IDLE_MS)
   const summary = bio.athlete.statsSummary
+  const { show } = useSpoilers()
 
   return (
     <div className="space-y-3">
@@ -33,7 +35,7 @@ export function PlayerOverview({ team, id, bio }: { team: TeamConfig; id: string
           </div>
         </Card>
       ) : null}
-      {log.loading ? <Spinner /> : log.data ? <Trend team={team} log={log.data} /> : null}
+      {!show ? <SpoilerNote what="Game-by-game stats are" /> : log.loading ? <Spinner /> : log.data ? <Trend team={team} log={log.data} /> : null}
     </div>
   )
 }

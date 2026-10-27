@@ -5,6 +5,7 @@ import { countdown, gameDate } from '../lib/format'
 import { TEAMS, type TeamKey } from '../lib/teams'
 import { IDLE_MS, usePoll } from '../lib/usePoll'
 import { HiddenScore, LiveBadge, Logo, useGameResult } from './ui'
+import { useSpoilers } from '../lib/spoilers'
 
 function useNow(ms = 30_000) {
   const [now, setNow] = useState(() => Date.now())
@@ -19,6 +20,7 @@ export function TeamCard({ teamKey, today }: { teamKey: TeamKey; today?: EspnEve
   const t = TEAMS[teamKey]
   const { data } = usePoll<ScheduleResponse>(urls.schedule(t), IDLE_MS)
   const now = useNow()
+  const { show } = useSpoilers()
 
   const events = data?.events ?? []
   const done = events.filter((e) => e.competitions[0].status.type.completed)
@@ -38,9 +40,14 @@ export function TeamCard({ teamKey, today }: { teamKey: TeamKey; today?: EspnEve
             <div className="mt-0.5 text-sm text-muted">
               {data ? (
                 <>
-                  <span className="font-semibold text-text">{data.team.recordSummary ?? '0-0'}</span>
-                  {data.team.standingSummary && <> · {data.team.standingSummary}</>}
-                  <> · {data.season.displayName}</>
+                  {show && (
+                    <>
+                      <span className="font-semibold text-text">{data.team.recordSummary ?? '0-0'}</span>
+                      {data.team.standingSummary && <> · {data.team.standingSummary}</>}
+                      {' · '}
+                    </>
+                  )}
+                  {data.season.displayName}
                 </>
               ) : (
                 '…'
@@ -91,6 +98,7 @@ function GameRow({
   const { us, them } = sides(comp, teamId)
   const state = comp.status.type.state
   const shown = useGameResult(event, teamId)
+  const { show } = useSpoilers()
   const tv = comp.broadcasts?.[0]?.media?.shortName ?? comp.broadcasts?.[0]?.names?.[0]
   return (
     <div className="flex items-center hover:bg-surface-2">
@@ -100,7 +108,7 @@ function GameRow({
         <div className="min-w-0 flex-1">
           <div className="truncate text-sm font-semibold">
             {us.homeAway === 'home' ? 'vs' : '@'} {them.team.shortDisplayName ?? them.team.displayName}
-            {recordText(them) && <span className="ml-1 font-normal text-muted">({recordText(them)})</span>}
+            {show && recordText(them) && <span className="ml-1 font-normal text-muted">({recordText(them)})</span>}
           </div>
           <div className="truncate text-xs text-muted">
             {detail}
