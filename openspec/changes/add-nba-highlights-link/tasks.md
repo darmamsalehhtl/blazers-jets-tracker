@@ -31,7 +31,7 @@
   - a 10:30 PM ET game uses the Eastern date
 
   Run `npm run lint` and `npm run build`. Commit ("Resolve NBA.com game links").
-- [ ] 2.2 Add `NbaWatchLink` and render it in `GameView` under the scoreboard for finished NBA games only (design decision 5):
+- [x] 2.2 Add `NbaWatchLink` and render it in `GameView` under the scoreboard for finished NBA games only (design decision 5):
   - "Watch on NBA.com" when the link is direct, "Find it on NBA.com" for the fallback
   - new tab
   - "NBA.com shows the final score" note only while the game is hidden

@@ -14,6 +14,7 @@ import { Scoreboard } from './Scoreboard'
 import { GameLeaders, TeamCompare } from './TeamCompare'
 import { WinProbChart } from './WinProbChart'
 import { GameAnalytics } from './GameAnalytics'
+import { NbaWatchLink } from './NbaWatchLink'
 
 type Tab = 'box' | 'team' | 'plays' | 'shots' | 'analytics' | 'info'
 
@@ -53,6 +54,7 @@ export function GameView({ teamKey, eventId }: { teamKey: TeamKey; eventId: stri
   return (
     <div className="space-y-3">
       <Scoreboard s={s} team={team} hidden={hidden} />
+      {team.league === 'nba' && state === 'post' && <NbaWatchLink comp={s.header.competitions[0]} hidden={hidden} />}
       <div className="flex justify-end">
         <Updated at={updatedAt} live={state === 'in'} />
       </div>
