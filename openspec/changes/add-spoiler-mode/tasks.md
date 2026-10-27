@@ -2,17 +2,17 @@
 
 ## 1. Spoiler state
 
-- [ ] 1.1 Add `src/lib/spoilers.ts` (design decision 1):
+- [x] 1.1 Add `src/lib/spoilers.ts` (design decision 1):
   - `SpoilerProvider` and `useSpoilers()` with `show`, `toggle`, `reveal(id)`, `canShow(event)`
   - `localStorage` keys `spoilers` and `revealedGames` (capped at 300) with try/catch fallback
   - default off
 
   Verify in the dev console that a fresh profile starts with `show === false`, that toggling and revealing survive a reload, and that blocking storage (throwing accessor) still lets the toggle work for the visit.
-- [ ] 1.2 Add the shared `HiddenScore`, `SpoilerNote`, and `useGameResult` pieces (design decision 2). Run `npm run lint` and `npm run build` and verify both pass. Commit ("Add spoiler state and hidden-score building blocks").
+- [x] 1.2 Add the shared `HiddenScore`, `SpoilerNote`, and `useGameResult` pieces (design decision 2). Run `npm run lint` and `npm run build` and verify both pass. Commit ("Add spoiler state and hidden-score building blocks").
 
 ## 2. Header toggle
 
-- [ ] 2.1 Wrap the outlet in `SpoilerProvider` and add the eye / eye-off toggle before the theme button in `Layout.tsx` (`aria-pressed`, label "Show spoilers" / "Hide spoilers"; design decision 5). Verify in Playwright at 360, 390 and 1200 px, light and dark, that all nav tabs and both toggles are visible and the document has no horizontal overflow. Commit ("Add spoiler toggle to the header, off by default").
+- [x] 2.1 Wrap the outlet in `SpoilerProvider` and add the eye / eye-off toggle before the theme button in `Layout.tsx` (`aria-pressed`, label "Show spoilers" / "Hide spoilers"; design decision 5). Verify in Playwright at 360, 390 and 1200 px, light and dark, that all nav tabs and both toggles are visible and the document has no horizontal overflow. Commit ("Add spoiler toggle to the header, off by default").
 
 ## 3. Hide results
 

@@ -1,15 +1,26 @@
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { ErrorBoundary } from './ErrorBoundary'
+import { EyeIcon, EyeOffIcon } from './ui'
+import { SpoilerProvider, useSpoilers } from '../lib/spoilers'
 import { TEAM_ORDER, TEAMS } from '../lib/teams'
 import { useTheme } from '../lib/theme'
 
 export function Layout() {
+  return (
+    <SpoilerProvider>
+      <Shell />
+    </SpoilerProvider>
+  )
+}
+
+function Shell() {
   const { theme, toggle } = useTheme()
+  const spoilers = useSpoilers()
   const location = useLocation()
   return (
     <div className="mx-auto min-h-dvh max-w-5xl">
       <header className="sticky top-0 z-20 border-b border-border bg-bg/85 backdrop-blur-md" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-        <div className="flex h-14 items-center gap-0.5 px-3 sm:gap-2 sm:px-4">
+        <div className="flex h-14 items-center gap-0.5 px-2 sm:gap-2 sm:px-4">
           <Link to="/" className="mr-auto flex shrink-0 items-center gap-2 font-semibold tracking-tight">
             <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="h-7 w-7" />
             <span className="hidden sm:inline">Tracker</span>
@@ -32,9 +43,20 @@ export function Layout() {
             MVP
           </NavLink>
           <button
+            onClick={spoilers.toggle}
+            aria-pressed={spoilers.show}
+            aria-label={spoilers.show ? 'Hide spoilers' : 'Show spoilers'}
+            title={spoilers.show ? 'Spoilers on: scores shown' : 'Spoilers off: final scores hidden'}
+            className={`flex h-9 w-8 shrink-0 sm:w-9 items-center justify-center rounded-lg hover:bg-surface-2 hover:text-text sm:ml-1 ${
+              spoilers.show ? 'text-text' : 'text-muted'
+            }`}
+          >
+            {spoilers.show ? <EyeIcon /> : <EyeOffIcon />}
+          </button>
+          <button
             onClick={toggle}
             aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-surface-2 hover:text-text sm:ml-1"
+            className="flex h-9 w-8 shrink-0 sm:w-9 items-center justify-center rounded-lg text-muted hover:bg-surface-2 hover:text-text"
           >
             {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
           </button>
@@ -50,7 +72,7 @@ export function Layout() {
 }
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
-  `flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium sm:px-2.5 ${
+  `flex shrink-0 items-center gap-1.5 rounded-lg px-1.5 py-1.5 text-sm font-medium sm:px-2.5 ${
     isActive ? 'bg-surface-2 text-text' : 'text-muted hover:text-text'
   }`
 
