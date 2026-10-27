@@ -1,4 +1,6 @@
-import type { ReactNode } from 'react'
+import type { MouseEvent, ReactNode } from 'react'
+import { sides, scoreText, type EspnEvent } from '../lib/espn'
+import { useSpoilers } from '../lib/spoilers'
 
 export function Card({
   title,
@@ -154,5 +156,74 @@ export function Stat({ label, value, sub }: { label: string; value: ReactNode; s
       <div className="mt-0.5 text-xl font-semibold">{value}</div>
       {sub && <div className="text-[11px] text-muted">{sub}</div>}
     </div>
+  )
+}
+
+/**
+ * A finished game's result from the team's side, or null while spoilers hide it.
+ * Pre and live games always return their (live) score; result is only set once final.
+ */
+export function useGameResult(event: EspnEvent, teamId: string) {
+  const { canShow } = useSpoilers()
+  const comp = event.competitions[0]
+  const state = comp.status.type.state
+  if (!canShow({ id: event.id, state })) return null
+  const { us, them } = sides(comp, teamId)
+  const result = comp.status.type.completed ? (us.winner ? 'W' : them.winner ? 'L' : 'T') : null
+  return { us, them, result, score: `${scoreText(us.score)}-${scoreText(them.score)}` } as const
+}
+
+/** Stand-in for a hidden final score: reveals just this game, in place. */
+export function HiddenScore({ id, final = false }: { id: string; final?: boolean }) {
+  const { reveal } = useSpoilers()
+  const onClick = (e: MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    reveal(id)
+  }
+  return (
+    <span className="inline-flex items-center gap-2">
+      {final && <span className="text-xs font-medium text-muted">Final</span>}
+      <button
+        type="button"
+        onClick={onClick}
+        className="min-w-[4.5rem] rounded-full border border-border px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap text-muted hover:bg-surface-2 hover:text-text"
+      >
+        Show score
+      </button>
+    </span>
+  )
+}
+
+/** Placeholder for a whole section that would give results away. */
+export function SpoilerNote({ what }: { what: string }) {
+  const { toggle } = useSpoilers()
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-dashed border-border bg-surface px-4 py-3 text-sm">
+      <span className="text-muted">
+        <EyeOffIcon /> {what} hidden while spoilers are off
+      </span>
+      <button type="button" onClick={toggle} className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-surface-2">
+        Show spoilers
+      </button>
+    </div>
+  )
+}
+
+export function EyeIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline-block">
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  )
+}
+
+export function EyeOffIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline-block align-[-3px]">
+      <path d="M9.9 4.24A9.1 9.1 0 0 1 12 4c6.5 0 10 8 10 8a17.6 17.6 0 0 1-2.16 3.19M6.6 6.6A17.4 17.4 0 0 0 2 12s3.5 8 10 8a9.7 9.7 0 0 0 5.4-1.6" />
+      <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24M2 2l20 20" />
+    </svg>
   )
 }
