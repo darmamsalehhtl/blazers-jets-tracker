@@ -3,7 +3,8 @@ import { headshotUrl, teamLogo } from '../../lib/espn'
 import { gameDate } from '../../lib/format'
 import type { Summary } from '../../lib/summary'
 import type { TeamConfig } from '../../lib/teams'
-import { Card, Headshot, Logo } from '../ui'
+import { useSpoilers } from '../../lib/spoilers'
+import { Card, Headshot, HiddenScore, Logo } from '../ui'
 
 const ml = (v?: number) => (v === undefined ? '–' : v > 0 ? `+${v}` : String(v))
 
@@ -14,6 +15,7 @@ export function GameInfo({ s, team }: { s: Summary; team: TeamConfig }) {
   const odds = s.pickcenter?.[0]
   const gi = s.gameInfo
   const series = s.seasonseries?.[0]
+  const { show, canShow } = useSpoilers()
 
   return (
     <div className="space-y-3">
@@ -73,16 +75,20 @@ export function GameInfo({ s, team }: { s: Summary; team: TeamConfig }) {
       )}
 
       {series?.events?.length ? (
-        <Card title={series.title ?? 'Season series'} right={series.summary}>
+        <Card title={series.title ?? 'Season series'} right={show ? series.summary : undefined}>
           <ul className="space-y-1.5 text-sm">
             {series.events.map((e) => (
               <li key={e.id} className="flex items-center justify-between">
                 <Link to={`/game/${team.key}/${e.id}`} className="hover:underline">
                   {gameDate(e.date, { withTime: false })}
                 </Link>
-                <span className="tabular-nums">
-                  {e.competitors.map((c) => `${c.team.abbreviation} ${c.score ?? ''}`).join(' · ')}
-                </span>
+                {canShow({ id: e.id, state: e.statusType?.completed ? 'post' : 'pre' }) ? (
+                  <span className="tabular-nums">{e.competitors.map((c) => `${c.team.abbreviation} ${c.score ?? ''}`).join(' · ')}</span>
+                ) : (
+                  <span className="flex items-center gap-2 text-muted">
+                    {e.competitors.map((c) => c.team.abbreviation).join(' · ')} <HiddenScore id={e.id} />
+                  </span>
+                )}
               </li>
             ))}
           </ul>

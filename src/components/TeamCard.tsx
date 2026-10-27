@@ -1,10 +1,10 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { recordText, scoreText, sides, teamLogo, urls, type EspnEvent, type ScheduleResponse } from '../lib/espn'
+import { recordText, sides, teamLogo, urls, type EspnEvent, type ScheduleResponse } from '../lib/espn'
 import { countdown, gameDate } from '../lib/format'
 import { TEAMS, type TeamKey } from '../lib/teams'
 import { IDLE_MS, usePoll } from '../lib/usePoll'
-import { LiveBadge, Logo } from './ui'
+import { HiddenScore, LiveBadge, Logo, useGameResult } from './ui'
 
 function useNow(ms = 30_000) {
   const [now, setNow] = useState(() => Date.now())
@@ -90,28 +90,35 @@ function GameRow({
   const comp = event.competitions[0]
   const { us, them } = sides(comp, teamId)
   const state = comp.status.type.state
-  const result = state === 'post' ? (us.winner ? 'W' : them.winner ? 'L' : 'T') : null
+  const shown = useGameResult(event, teamId)
   const tv = comp.broadcasts?.[0]?.media?.shortName ?? comp.broadcasts?.[0]?.names?.[0]
   return (
-    <Link to={`/game/${teamKey}/${event.id}`} className="flex items-center gap-3 p-4 hover:bg-surface-2">
-      <div className="w-12 shrink-0 text-xs font-semibold tracking-wider text-muted uppercase">{label}</div>
-      <Logo src={teamLogo(them.team)} alt={them.team.displayName} size={28} />
-      <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-semibold">
-          {us.homeAway === 'home' ? 'vs' : '@'} {them.team.shortDisplayName ?? them.team.displayName}
-          {recordText(them) && <span className="ml-1 font-normal text-muted">({recordText(them)})</span>}
+    <div className="flex items-center hover:bg-surface-2">
+      <Link to={`/game/${teamKey}/${event.id}`} className="flex min-w-0 flex-1 items-center gap-3 p-4">
+        <div className="w-12 shrink-0 text-xs font-semibold tracking-wider text-muted uppercase">{label}</div>
+        <Logo src={teamLogo(them.team)} alt={them.team.displayName} size={28} />
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-sm font-semibold">
+            {us.homeAway === 'home' ? 'vs' : '@'} {them.team.shortDisplayName ?? them.team.displayName}
+            {recordText(them) && <span className="ml-1 font-normal text-muted">({recordText(them)})</span>}
+          </div>
+          <div className="truncate text-xs text-muted">
+            {detail}
+            {tv && state !== 'post' ? ` · ${tv}` : ''}
+          </div>
         </div>
-        <div className="truncate text-xs text-muted">
-          {detail}
-          {tv && state !== 'post' ? ` · ${tv}` : ''}
-        </div>
-      </div>
-      {state !== 'pre' && (
-        <div className="text-right text-sm font-bold tabular-nums">
-          {result && <span className={result === 'W' ? 'text-good' : result === 'L' ? 'text-bad' : 'text-muted'}>{result} </span>}
-          {scoreText(us.score)}-{scoreText(them.score)}
+        {state !== 'pre' && shown && (
+          <div className="text-right text-sm font-bold tabular-nums">
+            {shown.result && <span className={shown.result === 'W' ? 'text-good' : shown.result === 'L' ? 'text-bad' : 'text-muted'}>{shown.result} </span>}
+            {shown.score}
+          </div>
+        )}
+      </Link>
+      {!shown && (
+        <div className="shrink-0 pr-4">
+          <HiddenScore id={event.id} />
         </div>
       )}
-    </Link>
+    </div>
   )
 }

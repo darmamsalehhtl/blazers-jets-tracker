@@ -2,6 +2,7 @@ import { useSearchParams } from 'react-router-dom'
 import { GameView } from '../components/game/GameView'
 import { Empty, ErrorBox, LiveBadge, Logo, Spinner, Updated } from '../components/ui'
 import { scoreText, teamLogo, type Competitor } from '../lib/espn'
+import { useSpoilers } from '../lib/spoilers'
 import { TEAMS } from '../lib/teams'
 import { useAllGames, type LeagueGame } from '../lib/useAllGames'
 
@@ -62,6 +63,8 @@ function GameChip({ g, active, onClick }: { g: LeagueGame; active: boolean; onCl
   const away = comp.competitors.find((c) => c.homeAway === 'away')!
   const home = comp.competitors.find((c) => c.homeAway === 'home')!
   const ours = [away, home].some((c) => c.team.id === TEAMS[g.team].id)
+  // Finished games stay spoiler-free until revealed (in the game panel below).
+  const hidden = !useSpoilers().canShow({ id: g.event.id, state: g.state })
   return (
     <button
       onClick={onClick}
@@ -81,22 +84,28 @@ function GameChip({ g, active, onClick }: { g: LeagueGame; active: boolean; onCl
             {comp.status.type.shortDetail}
           </span>
         ) : (
-          <span>{g.state === 'pre' ? new Date(comp.date).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : comp.status.type.shortDetail}</span>
+          <span>
+            {g.state === 'pre'
+              ? new Date(comp.date).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+              : hidden
+                ? 'Final'
+                : comp.status.type.shortDetail}
+          </span>
         )}
       </div>
-      <Row c={away} state={g.state} />
-      <Row c={home} state={g.state} />
+      <Row c={away} state={g.state} hidden={hidden} />
+      <Row c={home} state={g.state} hidden={hidden} />
     </button>
   )
 }
 
-function Row({ c, state }: { c: Competitor; state: LeagueGame['state'] }) {
-  const lost = state === 'post' && c.winner === false
+function Row({ c, state, hidden }: { c: Competitor; state: LeagueGame['state']; hidden: boolean }) {
+  const lost = state === 'post' && c.winner === false && !hidden
   return (
     <div className={`flex items-center gap-2 text-sm ${lost ? 'text-muted' : ''}`}>
       <Logo src={teamLogo(c.team)} alt="" size={18} />
       <span className="flex-1 font-semibold">{c.team.abbreviation}</span>
-      {state !== 'pre' && <span className="font-bold tabular-nums">{scoreText(c.score)}</span>}
+      {state !== 'pre' && !hidden && <span className="font-bold tabular-nums">{scoreText(c.score)}</span>}
     </div>
   )
 }

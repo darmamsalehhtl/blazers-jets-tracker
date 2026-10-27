@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { recordText, scoreText, sides, teamLogo, urls, type EspnEvent, type ScheduleResponse } from '../../lib/espn'
+import { recordText, sides, teamLogo, urls, type EspnEvent, type ScheduleResponse } from '../../lib/espn'
 import { gameDate } from '../../lib/format'
 import type { TeamConfig } from '../../lib/teams'
 import { IDLE_MS, usePoll } from '../../lib/usePoll'
-import { Card, Empty, LiveBadge, Logo, Select, Spinner } from '../ui'
+import { Card, Empty, HiddenScore, LiveBadge, Logo, Select, Spinner, useGameResult } from '../ui'
 
 const TYPES = [
   { value: 2, label: 'Regular season' },
@@ -61,11 +61,11 @@ function ScheduleRow({ team, e }: { team: TeamConfig; e: EspnEvent }) {
   const comp = e.competitions[0]
   const { us, them } = sides(comp, team.id)
   const st = comp.status.type
-  const result = st.completed ? (us.winner ? 'W' : them.winner ? 'L' : 'T') : null
+  const shown = useGameResult(e, team.id)
   const tv = comp.broadcasts?.[0]?.media?.shortName
   return (
-    <li className="border-t border-border/60 first:border-0">
-      <Link to={`/game/${team.key}/${e.id}`} className="flex items-center gap-3 px-4 py-2.5 hover:bg-surface-2">
+    <li className="flex items-center border-t border-border/60 first:border-0 hover:bg-surface-2">
+      <Link to={`/game/${team.key}/${e.id}`} className="flex min-w-0 flex-1 items-center gap-3 px-4 py-2.5">
         <div className="w-16 shrink-0 text-xs text-muted">
           {e.week?.number && team.league === 'nfl' ? <div className="font-semibold text-text">Wk {e.week.number}</div> : null}
           {gameDate(e.date, { withTime: false })}
@@ -83,18 +83,24 @@ function ScheduleRow({ team, e }: { team: TeamConfig; e: EspnEvent }) {
         <div className="shrink-0 text-right text-sm font-semibold tabular-nums">
           {st.state === 'in' ? (
             <span className="flex items-center gap-2">
-              <LiveBadge /> {scoreText(us.score)}-{scoreText(them.score)}
+              <LiveBadge /> {shown?.score}
             </span>
-          ) : result ? (
+          ) : st.completed && !shown ? (
+            <span className="text-xs font-medium text-muted">Final</span>
+          ) : shown?.result ? (
             <>
-              <span className={result === 'W' ? 'text-good' : result === 'L' ? 'text-bad' : 'text-muted'}>{result}</span> {scoreText(us.score)}-
-              {scoreText(them.score)}
+              <span className={shown.result === 'W' ? 'text-good' : shown.result === 'L' ? 'text-bad' : 'text-muted'}>{shown.result}</span> {shown.score}
             </>
           ) : st.name === 'STATUS_POSTPONED' || st.name === 'STATUS_CANCELED' ? (
             <span className="text-muted">{st.description}</span>
           ) : null}
         </div>
       </Link>
+      {st.completed && !shown && (
+        <div className="shrink-0 pr-4">
+          <HiddenScore id={e.id} />
+        </div>
+      )}
     </li>
   )
 }
