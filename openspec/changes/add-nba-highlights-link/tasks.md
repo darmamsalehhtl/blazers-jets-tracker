@@ -19,7 +19,7 @@
 
 ## 2. Resolving the link in the app
 
-- [ ] 2.1 Add `src/lib/nbaLink.ts` (design decisions 2–4):
+- [x] 2.1 Add `src/lib/nbaLink.ts` (design decisions 2–4):
   - Eastern-date helper
   - ESPN key builder from a summary
   - resolution order: build file, then the lazy, memoized browser fetch of the feed, then the day page
