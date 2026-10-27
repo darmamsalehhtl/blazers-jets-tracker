@@ -30,6 +30,7 @@ Live: https://darmamsalehhtl.github.io/blazers-jets-tracker/
 
 - Every screen must work on a phone (~390 px) and a laptop, in light and dark mode (CSS tokens in `src/index.css`).
 - Design: simple and modern. Stats as in-depth as possible.
+- Spoiler mode: anything new that shows a finished game's score or result, a record, or standings must respect `useSpoilers()` (`src/lib/spoilers.ts`). Finished games go through `canShow` / `useGameResult`; whole sections use `SpoilerNote`. Live games always show their score.
 - Verify UI changes in a browser before committing. ESPN returns 403 to headless Chrome unless you set a normal Chrome user agent and override the `sec-ch-ua` header.
 
 ## Planning
