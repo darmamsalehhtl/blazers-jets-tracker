@@ -32,6 +32,10 @@ The Salary and Yrs left columns SHALL be sortable like the other roster columns.
 - **WHEN** a practice-squad player has no contract data
 - **THEN** his Salary and Yrs left cells show "–"
 
+#### Scenario: Note on missing contracts
+- **WHEN** at least one player on the roster has no contract data
+- **THEN** a note under the roster says "–" means ESPN has no contract on file for those players, with how many, and that they aren't in the payroll
+
 ### Requirement: College stays on NFL rosters
 NFL rosters SHALL keep the College column, shown after the contract columns.
 

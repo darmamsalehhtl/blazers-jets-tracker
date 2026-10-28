@@ -73,6 +73,7 @@ export function TeamRoster({ team }: { team: TeamConfig }) {
 
   const all = rosterPlayers(data)
   const payroll = all.reduce((a, p) => a + (p.contract?.salary ?? 0), 0)
+  const noContract = all.filter((p) => !p.contract?.salary).length
   const avgAge = all.reduce((a, p) => a + (p.age ?? 0), 0) / Math.max(1, all.filter((p) => p.age).length)
   const coach = data.coach?.[0]
 
@@ -122,6 +123,13 @@ export function TeamRoster({ team }: { team: TeamConfig }) {
           <StatTable columns={cols} rows={g.players} rowKey={(p) => p.id} onRowClick={(p) => nav(`/player/${team.key}/${p.id}`)} />
         </Card>
       ))}
+      {noContract > 0 && (
+        <p className="px-1 text-[11px] leading-relaxed text-muted">
+          “–” under Salary: ESPN has no contract on file for {noContract === 1 ? 'this player' : `these ${noContract} players`} (
+          {team.league === 'nfl' ? 'mostly rookies and practice-squad or recently signed players' : 'often two-way or recently signed players'}),
+          so they aren't in the payroll either.
+        </p>
+      )}
     </div>
   )
 }
