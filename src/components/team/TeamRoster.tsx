@@ -25,7 +25,7 @@ export interface RosterPlayer {
   debutYear?: number
   injuries?: { status: string; date?: string }[]
   status?: { name?: string; type?: string }
-  contract?: { salary?: number; yearsRemaining?: number; salaryRemaining?: number }
+  contract?: { salary?: number; yearsRemaining?: number; salaryRemaining?: number; signedThrough?: number; season?: { year: number } }
 }
 
 export interface RosterResponse {
@@ -35,6 +35,17 @@ export interface RosterResponse {
 }
 
 const money = (v?: number) => (v ? `$${(v / 1_000_000).toFixed(v >= 10_000_000 ? 1 : 2)}M` : '–')
+
+/**
+ * Seasons left on the contract, this one included. ESPN's NBA `yearsRemaining`
+ * already counts the current season; its NFL one doesn't (a contract ending this
+ * season says 0), but NFL contracts carry the last season instead.
+ */
+function yearsLeft(p: RosterPlayer) {
+  const c = p.contract
+  if (c?.signedThrough && c.season?.year) return c.signedThrough - c.season.year + 1
+  return c?.yearsRemaining
+}
 
 export function rosterPlayers(r: RosterResponse) {
   return r.athletes.flatMap((a) => ('items' in a ? a.items : [a]))
@@ -86,7 +97,7 @@ export function TeamRoster({ team }: { team: TeamConfig }) {
     { key: 'wt', label: 'Wt', render: (p) => p.displayWeight ?? '–', sort: (p) => p.weight ?? 0 },
     { key: 'exp', label: 'Exp', render: (p) => (p.experience?.years ? p.experience.years : 'R'), sort: (p) => p.experience?.years ?? 0 },
     { key: 'sal', label: 'Salary', render: (p) => money(p.contract?.salary), sort: (p) => p.contract?.salary ?? 0 },
-    { key: 'yrs', label: 'Yrs left', render: (p) => p.contract?.yearsRemaining ?? '–', sort: (p) => p.contract?.yearsRemaining ?? 0 },
+    { key: 'yrs', label: 'Yrs left', render: (p) => yearsLeft(p) ?? '–', sort: (p) => yearsLeft(p) ?? 0 },
     ...(team.league === 'nfl'
       ? [{ key: 'col', label: 'College', render: (p: RosterPlayer) => p.college?.name ?? '–', sort: (p: RosterPlayer) => p.college?.name ?? '', align: 'left' as const }]
       : []),

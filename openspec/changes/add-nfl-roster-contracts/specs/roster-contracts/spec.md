@@ -7,11 +7,15 @@ Shows what each rostered player is paid and how long his contract runs, on the R
 ## ADDED Requirements
 
 ### Requirement: Contract columns on every roster
-The Roster tab of every tracked team, NFL and NBA, SHALL show a Salary column (this season's salary in millions of dollars) and a Yrs left column (years remaining on the contract) for each player.
+The Roster tab of every tracked team, NFL and NBA, SHALL show a Salary column (this season's salary in millions of dollars) and a Yrs left column for each player. Yrs left SHALL count the seasons left on the contract including the current one, the same way in both leagues.
 
 #### Scenario: Jets roster
 - **WHEN** the user opens the Jets' Roster tab
-- **THEN** every roster group (offense, defense, special teams, injured reserve, practice squad) shows Salary and Yrs left columns, for example "$23.3M" and "5" for Garrett Wilson
+- **THEN** every roster group (offense, defense, special teams, injured reserve, practice squad) shows Salary and Yrs left columns, for example "$23.3M" and "6" for Garrett Wilson, who is signed through 2031
+
+#### Scenario: Contract ending this season
+- **WHEN** a Jets player's contract runs through the current season
+- **THEN** his Yrs left shows 1, the same as an expiring contract on the Blazers' roster, not 0
 
 #### Scenario: Blazers roster unchanged
 - **WHEN** the user opens the Blazers' Roster tab
