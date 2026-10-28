@@ -85,12 +85,11 @@ export function TeamRoster({ team }: { team: TeamConfig }) {
     { key: 'ht', label: 'Ht', render: (p) => p.displayHeight ?? '–', sort: (p) => p.height ?? 0 },
     { key: 'wt', label: 'Wt', render: (p) => p.displayWeight ?? '–', sort: (p) => p.weight ?? 0 },
     { key: 'exp', label: 'Exp', render: (p) => (p.experience?.years ? p.experience.years : 'R'), sort: (p) => p.experience?.years ?? 0 },
-    ...(team.league === 'nba'
-      ? [
-          { key: 'sal', label: 'Salary', render: (p: RosterPlayer) => money(p.contract?.salary), sort: (p: RosterPlayer) => p.contract?.salary ?? 0 },
-          { key: 'yrs', label: 'Yrs left', render: (p: RosterPlayer) => p.contract?.yearsRemaining ?? '–', sort: (p: RosterPlayer) => p.contract?.yearsRemaining ?? 0 },
-        ]
-      : [{ key: 'col', label: 'College', render: (p: RosterPlayer) => p.college?.name ?? '–', sort: (p: RosterPlayer) => p.college?.name ?? '', align: 'left' as const }]),
+    { key: 'sal', label: 'Salary', render: (p) => money(p.contract?.salary), sort: (p) => p.contract?.salary ?? 0 },
+    { key: 'yrs', label: 'Yrs left', render: (p) => p.contract?.yearsRemaining ?? '–', sort: (p) => p.contract?.yearsRemaining ?? 0 },
+    ...(team.league === 'nfl'
+      ? [{ key: 'col', label: 'College', render: (p: RosterPlayer) => p.college?.name ?? '–', sort: (p: RosterPlayer) => p.college?.name ?? '', align: 'left' as const }]
+      : []),
     {
       key: 'status',
       label: 'Status',

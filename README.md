@@ -19,7 +19,7 @@ It works on phone and laptop and can be installed to your home screen.
   - full schedule for any season
   - 100–286 team stats, each with its **league rank**
   - every player's season stats, sortable
-  - roster, including NBA salaries
+  - roster, including salaries and contract years
   - standings and news
 - **Advanced:**
   - **Jets:** EPA/play, success rate, PROE, CPOE and more, ranked against all 32 teams; an offense-vs-defense EPA chart for every team; the biggest win-probability swings; per-player EPA with league ranks (from [nflverse](https://github.com/nflverse/nflverse-data)).

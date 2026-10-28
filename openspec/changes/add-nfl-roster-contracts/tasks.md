@@ -2,7 +2,7 @@
 
 ## 1. Roster table
 
-- [ ] 1.1 In `src/components/team/TeamRoster.tsx`, add the Salary and Yrs left columns for every league instead of only the NBA. College stays on NFL rosters, after Yrs left, and the Status column stays last. Players without contract data keep showing "–" and sort as zero. Update the README line "roster, including NBA salaries" to cover both teams. Commit ("Show salaries and contract years on the Jets roster").
+- [x] 1.1 In `src/components/team/TeamRoster.tsx`, add the Salary and Yrs left columns for every league instead of only the NBA. College stays on NFL rosters, after Yrs left, and the Status column stays last. Players without contract data keep showing "–" and sort as zero. Update the README line "roster, including NBA salaries" to cover both teams. Commit ("Show salaries and contract years on the Jets roster").
 
 ## 2. Verify
 
