@@ -14,7 +14,7 @@
 
 ## 2. Pick logic
 
-- [ ] 2.1 Create `src/lib/mockDraft.ts`. It holds the `MockDraftData`, `Prospect` and `MockPick` types, the group constants, `posValue`, the reach limit, the ST rule before round 5, need decay after a pick, the `uncertain` owner fallback, `fills`, and `null` once the board runs out. It's a pure `mockDraft(picks, data)` with every weight in one constant.
+- [x] 2.1 Create `src/lib/mockDraft.ts`. It holds the `MockDraftData`, `Prospect` and `MockPick` types, the group constants, `posValue`, the reach limit, the ST rule before round 5, need decay after a pick, the `uncertain` owner fallback, `fills`, and `null` once the board runs out. It's a pure `mockDraft(picks, data)` with every weight in one constant.
 
   Check it with a scratch script against the built data and the current order:
   - no prospect is picked twice

@@ -101,7 +101,7 @@ Picks go in `overall` order over a mutable copy of the needs. For the team on th
 
   | Group | posValue |
   | --- | --- |
-  | QB | 1.15, only when QB need ≥ 0.3, otherwise 1.0 |
+  | QB | 1.15 when QB need ≥ 0.3, otherwise 0.7 |
   | EDGE | 1.08 |
   | OT | 1.06 |
   | CB | 1.04 |
@@ -114,7 +114,7 @@ Picks go in `overall` order over a mutable copy of the needs. For the team on th
   | RB | 0.9 |
   | ST | 0.4 |
 
-  The QB premium is tied to need so that a team without a QB need doesn't take one just for being a QB.
+  The QB value is tied to need. A team with its starter set (need below 0.3) gets a discount, not just a neutral value, because the first check showed teams like CIN taking a QB in round 1 only because he was the best left.
 - **Reach limit:** a prospect can only be picked if `r ≤ bestAvailableRank + max(6, ceil(0.35 × overall))`. ST prospects are excluded before round 5.
 - The highest score wins. A tie goes to the better rank.
 - **After a pick:** `need[group] *= 0.3`, or `*= 0.1` for QB.
