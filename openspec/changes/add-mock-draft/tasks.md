@@ -28,7 +28,7 @@
 
 - [x] 3.1 In `DraftPage.tsx`, load `mock-draft` and memoize `mockDraft(board.picks, data)`. `PickRow` gets the prospect line (college logo, name, `POS · College`), the "uncertain" mark and the "board doesn't reach this pick yet" state. It expands into a details panel (`aria-expanded`) with rank, position rank, size, note, top needs, why the pick fits, and the ESPN player-card link. On phones, drop the SOS line. Commit ("Show mocked players on every draft pick").
 - [x] 3.2 Add each mocked prospect's name and position under the pick number on the Jets picks card. Add the unavailable-data notice (the order still works) and the footnote sentence on how the mock works. Commit ("Show the Jets' mocked players and mock draft notes").
-- [ ] 3.3 Verify in Playwright at 390 px dark and 1200 px light, with no horizontal overflow and no console errors:
+- [x] 3.3 Verify in Playwright at 390 px dark and 1200 px light, with no horizontal overflow and no console errors:
   - round 1 is fully filled with no duplicates
   - expanding and collapsing a Jets pick shows the right details
   - round 2 shows the "board doesn't reach" state after the 50th prospect
