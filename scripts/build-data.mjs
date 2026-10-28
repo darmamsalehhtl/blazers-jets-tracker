@@ -20,6 +20,10 @@
 //              ("sac-vs-por-0022600012"), keyed by Eastern date + ESPN team
 //              codes, so finished games can link to their highlights/replay.
 //              NBA_SCHEDULE_FILE=path reads a saved feed instead (for testing).
+//   mock-draft.json – inputs for the Draft tab's mock draft: ESPN's prospect board
+//              for next draft and every team's need per position group (unit
+//              EPA, starter age/depth, recent early picks; weights: NEED_WEIGHTS).
+//              The picks themselves are made in the browser on the live order.
 //
 // Each part fails independently: if a source is down, that file records the
 // error and the app shows a notice instead of breaking the build.
@@ -59,7 +63,7 @@ async function main() {
     'players-nba': async () => buildPlayerIndex('nba', await mvpOnce()),
     draft: buildDraft,
     'nba-games': buildNbaGames,
-    'mock-draft': async () => ({ available: true, prospects: await mockProspects(NFL_SEASON + 1) }),
+    'mock-draft': () => buildMockDraft(once().then((j) => j.leagueInput.teamUnits)),
   }
   const names = Object.keys(builders).filter((n) => !only || only.includes(n))
   const results = await Promise.allSettled(names.map((n) => builders[n]()))
@@ -1467,6 +1471,170 @@ async function mockProspects(draftYear) {
   // Ranked prospects first by rank; unranked ones after, in ESPN's order.
   prospects.sort((a, b) => (a.rank ?? Infinity) - (b.rank ?? Infinity) || a.order - b.order)
   return prospects.map(({ order, ...p }) => p)
+}
+
+// Team needs (design 4). Each signal is 0 (no need) … 1 (big need).
+const NEED_WEIGHTS = {
+  unit: 0.4, // how the unit that plays the position performed (EPA per play, league percentile)
+  starters: 0.35, // share of starting slots empty or held by a player past the age cliff
+  round1: 0.5, // subtracted per round-1 pick at the position in the last 3 drafts
+  round2: 0.25, // … per round-2 pick
+  qbRound1Cap: 0.1, // a round-1 QB in the last 3 drafts caps QB need here
+  // Unit EPA mostly reflects the QB, the line and the scheme, so it says less about these groups.
+  unitRelevance: { RB: 0.5, TE: 0.5 },
+}
+const NEED_GROUPS = ['QB', 'RB', 'WR', 'TE', 'OT', 'IOL', 'EDGE', 'DT', 'LB', 'CB', 'S']
+const STARTERS = { QB: 1, RB: 1, WR: 3, TE: 1, OT: 2, IOL: 3, EDGE: 2, DT: 2, LB: 2, CB: 3, S: 2 }
+// A starter older than this counts as aging (31 for everyone else).
+const AGE_CLIFF = { RB: 27, WR: 29, CB: 29, QB: 35 }
+// Which unit's EPA stands for each group.
+const UNIT_OF = {
+  QB: 'offPass', WR: 'offPass', TE: 'offPass', OT: 'offPass', RB: 'offRush', IOL: 'offRush',
+  CB: 'defPass', S: 'defPass', EDGE: 'defPass', DT: 'defRush', LB: 'defRush',
+}
+// Depth-chart slot → group. ESPN's 3-4 fronts (a nose tackle or inside linebackers) list the
+// outside linebackers as wlb/slb: those are edge rushers, and the ends play inside.
+const SLOT_GROUPS = {
+  qb: 'QB', rb: 'RB', wr1: 'WR', wr2: 'WR', wr3: 'WR', te: 'TE', lt: 'OT', rt: 'OT', lg: 'IOL', c: 'IOL', rg: 'IOL',
+  lde: 'EDGE', rde: 'EDGE', ldt: 'DT', rdt: 'DT', nt: 'DT', lolb: 'EDGE', rolb: 'EDGE',
+  wlb: 'LB', mlb: 'LB', slb: 'LB', lilb: 'LB', rilb: 'LB', lcb: 'CB', rcb: 'CB', nb: 'CB', ss: 'S', fs: 'S',
+}
+// nflverse draft_picks.csv uses Pro Football Reference team codes and broad position labels.
+const PFR_TEAMS = { GNB: 'GB', KAN: 'KC', LVR: 'LV', NOR: 'NO', NWE: 'NE', SFO: 'SF', TAM: 'TB', WAS: 'WSH' }
+const PICK_GROUPS = { OL: ['OT', 'IOL'], DB: ['CB', 'S'], SAF: ['S'], DL: ['DT'] }
+
+const clamp01 = (v) => Math.min(1, Math.max(0, v))
+
+/** Need percentile per team per group from pass/rush EPA (nflverse codes → ESPN). */
+function unitNeeds(teamUnits) {
+  const out = {}
+  const n = teamUnits.length
+  for (const unit of ['offPass', 'offRush', 'defPass', 'defRush']) {
+    const off = unit.startsWith('off')
+    // Best unit first: most EPA gained on offense, least allowed on defense.
+    const sorted = teamUnits.filter((t) => t[unit] !== null).sort((a, b) => (off ? b[unit] - a[unit] : a[unit] - b[unit]))
+    sorted.forEach((t, i) => {
+      const abbr = NFLVERSE_ABBR[t.team] ?? t.team
+      ;(out[abbr] ??= {})[unit] = n > 1 ? i / (sorted.length - 1) : 0.5
+    })
+  }
+  return out
+}
+
+/** Starter-slot need per group for one team, from its depth chart and roster ages. */
+async function starterNeeds(teamId) {
+  const base = `https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/${teamId}`
+  const [depth, roster] = await Promise.all([getJSON(`${base}/depthcharts`), getJSON(`${base}/roster`)])
+  const ages = new Map((roster.athletes ?? []).flatMap((g) => g.items ?? [g]).map((a) => [a.id, a.age]))
+  const formations = (depth.depthchart ?? []).filter((f) => !/special/i.test(f.name ?? ''))
+  const offense = formations.find((f) => f.positions?.qb)
+  const defense = formations.find((f) => !f.positions?.qb)
+  if (!offense || !defense) throw new Error('depth chart missing offense or defense')
+  const p = defense.positions
+  const threeFour = !!(p.nt || p.lilb || p.rilb)
+  const slots = {}
+  for (const f of [offense, defense]) {
+    for (const [key, slot] of Object.entries(f.positions)) {
+      let group = SLOT_GROUPS[key]
+      if (!group) continue
+      if (threeFour && (key === 'lde' || key === 'rde')) group = 'DT'
+      if (threeFour && (key === 'wlb' || key === 'slb')) group = 'EDGE'
+      ;(slots[group] ??= []).push(slot.athletes?.[0])
+    }
+  }
+  const needs = {}
+  for (const g of NEED_GROUPS) {
+    const starters = (slots[g] ?? []).slice(0, STARTERS[g])
+    const cliff = AGE_CLIFF[g] ?? 31
+    let weak = STARTERS[g] - starters.length
+    for (const a of starters) {
+      const age = a ? ages.get(a.id) : undefined
+      if (!a || (age !== undefined && age > cliff)) weak++
+    }
+    needs[g] = weak / STARTERS[g]
+  }
+  return needs
+}
+
+/** Round 1–2 picks per team per group over the last 3 drafts, plus round-1 QBs. */
+async function recentPicks(draftYear) {
+  const out = {}
+  const from = draftYear - 3
+  await streamCsv(`${NFLVERSE}/draft_picks/draft_picks.csv`, (r) => {
+    const season = num(r.season)
+    const rnd = num(r.round)
+    if (season === null || season < from || season >= draftYear || (rnd !== 1 && rnd !== 2)) return
+    const team = PFR_TEAMS[r.team] ?? r.team
+    const groups = PICK_GROUPS[r.position] ?? (DRAFT_GROUPS[r.position] ? [DRAFT_GROUPS[r.position]] : [])
+    const t = (out[team] ??= {})
+    for (const g of groups) {
+      const c = (t[g] ??= { round1: 0, round2: 0 })
+      c[rnd === 1 ? 'round1' : 'round2']++
+    }
+  })
+  if (!Object.keys(out).length) throw new Error(`no round 1–2 picks for ${from}–${draftYear - 1}`)
+  return out
+}
+
+/**
+ * Every team's need (0…1) per position group and its top 3, from the three
+ * signals above. A failed signal is left out (its weight spread over the
+ * others); teams missing one are listed in `missingTeams`.
+ */
+async function teamNeeds(draftYear, teamUnitsP) {
+  const d = await getJSON('https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams')
+  const teams = (d.sports?.[0]?.leagues?.[0]?.teams ?? []).map((x) => x.team)
+  if (teams.length !== 32) throw new Error(`expected 32 NFL teams, got ${teams.length}`)
+
+  const units = await teamUnitsP.then(unitNeeds).catch((e) => (console.warn('mock-draft: no unit EPA –', e.message), null))
+  const picks = await recentPicks(draftYear).catch((e) => (console.warn('mock-draft: no recent picks –', e.message), null))
+  const starters = await pool(teams, 8, async (t) => {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        return await starterNeeds(t.id)
+      } catch (e) {
+        if (attempt) console.warn(`mock-draft: no depth chart for ${t.abbreviation} –`, e.message)
+      }
+    }
+    return null
+  })
+
+  const missingTeams = []
+  const needs = {}
+  teams.forEach((t, i) => {
+    const abbr = t.abbreviation
+    const unit = units?.[abbr]
+    const start = starters[i]
+    const recent = picks?.[abbr] ?? {}
+    if (!unit || !start || !picks) missingTeams.push(abbr)
+    const groups = {}
+    for (const g of NEED_GROUPS) {
+      let sum = 0
+      let weight = 0
+      if (unit?.[UNIT_OF[g]] !== undefined) {
+        sum += NEED_WEIGHTS.unit * unit[UNIT_OF[g]] * (NEED_WEIGHTS.unitRelevance[g] ?? 1)
+        weight += NEED_WEIGHTS.unit
+      }
+      if (start) (sum += NEED_WEIGHTS.starters * start[g]), (weight += NEED_WEIGHTS.starters)
+      const r = recent[g] ?? { round1: 0, round2: 0 }
+      let need = (weight ? sum / weight : 0.5) - NEED_WEIGHTS.round1 * r.round1 - NEED_WEIGHTS.round2 * r.round2
+      if (g === 'QB' && r.round1) need = Math.min(need, NEED_WEIGHTS.qbRound1Cap)
+      groups[g] = round(clamp01(need), 2)
+    }
+    groups.ST = 0
+    const top = [...NEED_GROUPS].sort((a, b) => groups[b] - groups[a]).slice(0, 3)
+    needs[abbr] = { groups, top }
+  })
+  return { needs, missingTeams }
+}
+
+async function buildMockDraft(teamUnitsP) {
+  const draftYear = NFL_SEASON + 1
+  const prospects = await mockProspects(draftYear)
+  if (!prospects.length) throw new Error(`ESPN has no ${draftYear} draft prospects yet`)
+  const { needs, missingTeams } = await teamNeeds(draftYear, teamUnitsP)
+  if (missingTeams.length) console.log(`mock-draft: needs incomplete for ${missingTeams.join(', ')}`)
+  return { available: true, draftYear, prospectCount: prospects.length, prospects, needs, missingTeams }
 }
 
 main().catch((e) => {

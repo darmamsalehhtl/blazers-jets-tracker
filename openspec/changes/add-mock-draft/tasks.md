@@ -4,13 +4,13 @@
 
 - [x] 1.1 In `scripts/build-data.mjs`, expose `teamUnits` (each team's offense and defense `passEpa`/`rushEpa`) from `buildJets` through `leagueInput`, and check that `nyj.json` is unchanged. Commit ("Expose team pass and rush EPA to the data build").
 - [x] 1.2 Add `mockProspects(draftYear)`. It pages through ESPN's draft athletes, resolves `$ref`s with `pool(…, 8)`, and fetches colleges deduped by id. It maps positions to the 12 groups (design 3), keeps the fields from design 2, and logs unmapped positions. Run `ONLY=mock-draft` and check the 50 prospects (ranks 1–50, groups set, notes cut on sentences). Commit ("Fetch ESPN's draft prospect board").
-- [ ] 1.3 Add `teamNeeds()` per design 4 with `NEED_WEIGHTS`, built from three signals:
+- [x] 1.3 Add `teamNeeds()` per design 4 with `NEED_WEIGHTS`, built from three signals:
   - unit percentiles from `teamUnits`
   - depth-chart starters (first formation per side, with slot→group mapping, starter counts and age cliffs, joined with roster ages)
   - nflverse `draft_picks.csv` (round 1 and 2 picks in the last 3 drafts, team names mapped to ESPN abbreviations, and the round 1 QB cap)
 
   Each signal must fail on its own: spread its weight and list the affected teams in `missingTeams`.
-- [ ] 1.4 Register the `mock-draft` builder. It writes `{ available, draftYear, prospectCount, prospects, needs, missingTeams }` and throws when there are no prospects. Update the build header comment and the README data-files list. Print every team's top 3 needs and check that they're plausible. For example, a team with a recent round 1 QB has no QB need, and the worst pass defenses list CB, S or EDGE. Commit ("Build team needs and the mock draft data file").
+- [x] 1.4 Register the `mock-draft` builder. It writes `{ available, draftYear, prospectCount, prospects, needs, missingTeams }` and throws when there are no prospects. Update the build header comment and the README data-files list. Print every team's top 3 needs and check that they're plausible. For example, a team with a recent round 1 QB has no QB need, and the worst pass defenses list CB, S or EDGE. Commit ("Build team needs and the mock draft data file").
 
 ## 2. Pick logic
 
