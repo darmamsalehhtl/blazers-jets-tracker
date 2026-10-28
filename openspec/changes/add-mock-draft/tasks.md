@@ -3,7 +3,7 @@
 ## 1. Data build: mock-draft.json
 
 - [x] 1.1 In `scripts/build-data.mjs`, expose `teamUnits` (each team's offense and defense `passEpa`/`rushEpa`) from `buildJets` through `leagueInput`, and check that `nyj.json` is unchanged. Commit ("Expose team pass and rush EPA to the data build").
-- [ ] 1.2 Add `mockProspects(draftYear)`. It pages through ESPN's draft athletes, resolves `$ref`s with `pool(…, 8)`, and fetches colleges deduped by id. It maps positions to the 12 groups (design 3), keeps the fields from design 2, and logs unmapped positions. Run `ONLY=mock-draft` and check the 50 prospects (ranks 1–50, groups set, notes cut on sentences). Commit ("Fetch ESPN's draft prospect board").
+- [x] 1.2 Add `mockProspects(draftYear)`. It pages through ESPN's draft athletes, resolves `$ref`s with `pool(…, 8)`, and fetches colleges deduped by id. It maps positions to the 12 groups (design 3), keeps the fields from design 2, and logs unmapped positions. Run `ONLY=mock-draft` and check the 50 prospects (ranks 1–50, groups set, notes cut on sentences). Commit ("Fetch ESPN's draft prospect board").
 - [ ] 1.3 Add `teamNeeds()` per design 4 with `NEED_WEIGHTS`, built from three signals:
   - unit percentiles from `teamUnits`
   - depth-chart starters (first formation per side, with slot→group mapping, starter counts and age cliffs, joined with roster ages)

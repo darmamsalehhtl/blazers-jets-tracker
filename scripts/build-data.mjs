@@ -59,6 +59,7 @@ async function main() {
     'players-nba': async () => buildPlayerIndex('nba', await mvpOnce()),
     draft: buildDraft,
     'nba-games': buildNbaGames,
+    'mock-draft': async () => ({ available: true, prospects: await mockProspects(NFL_SEASON + 1) }),
   }
   const names = Object.keys(builders).filter((n) => !only || only.includes(n))
   const results = await Promise.allSettled(names.map((n) => builders[n]()))
@@ -1386,6 +1387,86 @@ function nbaGameMap(feed) {
   if (!count) throw new Error('NBA schedule feed: no games')
   if (unknown.size) console.log(`nba-games: skipped games with non-NBA tricodes ${[...unknown].join(', ')}`)
   return { available: true, season: ls.seasonYear, count, games }
+}
+
+// ------------------------------------------------------------------ NFL mock draft inputs
+
+const DRAFT_CORE = 'https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons'
+// ESPN position → mock draft group (design 3). Kickers, punters and long snappers are "ST".
+const DRAFT_GROUPS = {
+  QB: 'QB', RB: 'RB', FB: 'RB', WR: 'WR', TE: 'TE',
+  OT: 'OT', T: 'OT', G: 'IOL', OG: 'IOL', C: 'IOL', OL: 'IOL', IOL: 'IOL',
+  DE: 'EDGE', EDGE: 'EDGE', OLB: 'EDGE', DT: 'DT', NT: 'DT', DL: 'DT',
+  LB: 'LB', ILB: 'LB', MLB: 'LB', CB: 'CB', S: 'S', FS: 'S', SS: 'S', DB: 'S',
+  PK: 'ST', K: 'ST', P: 'ST', LS: 'ST',
+}
+// The core API hands out http:// refs; fetch them over https.
+const https = (u) => u.replace(/^http:/, 'https:')
+
+/** First sentences of a scouting note, up to about `max` characters. */
+function clipNote(text, max = 400) {
+  // Notes carry a little HTML ("<i>-- Jordan Reid</i>"); keep plain text with a proper dash.
+  const t = text
+    ?.replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&#39;|&rsquo;/g, '’')
+    .replace(/&quot;/g, '"')
+    .replace(/\s--\s/g, ' — ')
+    .replace(/\s+/g, ' ')
+    .trim()
+  if (!t || t.length <= max) return t || null
+  const sentences = t.match(/[^.!?]+[.!?]+(\s|$)/g) ?? [t]
+  let out = ''
+  for (const s of sentences) {
+    if (out && (out + s).length > max) break
+    out += s
+  }
+  return out.trim().slice(0, max + 100)
+}
+
+/** ESPN's prospect board for `draftYear`, best rank first (design 2). */
+async function mockProspects(draftYear) {
+  const refs = []
+  for (let page = 1; ; page++) {
+    const d = await getJSON(`${DRAFT_CORE}/${draftYear}/draft/athletes?limit=100&page=${page}`)
+    refs.push(...(d.items ?? []).map((i) => i.$ref))
+    if (page >= (d.pageCount ?? 1)) break
+  }
+  const raw = (await pool(refs, 8, (r) => getJSON(https(r)).catch(() => null))).filter(Boolean)
+
+  const collegeRefs = [...new Set(raw.map((a) => a.college?.$ref).filter(Boolean))]
+  const colleges = new Map()
+  await pool(collegeRefs, 8, async (r) => {
+    const c = await getJSON(https(r)).catch(() => null)
+    if (c) colleges.set(r, c.shortName ?? c.name)
+  })
+
+  const unmapped = new Set()
+  const prospects = raw.map((a, order) => {
+    const attr = (name) => a.attributes?.find((x) => x.name === name)?.value
+    const pos = a.position?.abbreviation ?? ''
+    const group = DRAFT_GROUPS[pos] ?? pos
+    if (!DRAFT_GROUPS[pos]) unmapped.add(pos || '(none)')
+    return {
+      id: a.id,
+      name: a.displayName ?? a.fullName,
+      pos,
+      group,
+      rank: attr('overall') || null,
+      posRank: attr('rank') || null,
+      college: colleges.get(a.college?.$ref) ?? null,
+      collegeLogo: a.logo?.href ?? null,
+      height: a.displayHeight ?? null,
+      weight: a.displayWeight ?? null,
+      note: clipNote(a.analysis?.find((x) => x.type === 'predraft')?.text ?? a.analysis?.[0]?.text),
+      url: a.links?.find((l) => l.rel?.includes('playercard'))?.href ?? null,
+      order,
+    }
+  })
+  if (unmapped.size) console.log(`mock-draft: unmapped prospect positions ${[...unmapped].join(', ')}`)
+  // Ranked prospects first by rank; unranked ones after, in ESPN's order.
+  prospects.sort((a, b) => (a.rank ?? Infinity) - (b.rank ?? Infinity) || a.order - b.order)
+  return prospects.map(({ order, ...p }) => p)
 }
 
 main().catch((e) => {
