@@ -325,7 +325,11 @@ async function buildJets(team = 'NYJ') {
     byQuarter: Object.fromEntries(['off', 'def'].map((s) => [s, Object.fromEntries(Object.entries(byQuarter[s]).map(([k, v]) => [k, summarize(v)]))])),
     bigPlays: bigPlays.sort((a, b) => Math.abs(b.wpa) - Math.abs(a.wpa)).slice(0, 20),
     players,
-    leagueInput: { passers, receivers, rushers, idMap, weeks, mvpStats, positions, fullNames },
+    leagueInput: {
+      passers, receivers, rushers, idMap, weeks, mvpStats, positions, fullNames,
+      // Pass/rush EPA per play for every team, both sides (nflverse codes); used for mock draft needs.
+      teamUnits: league.map((l) => ({ team: l.team, offPass: l.off.passEpa, offRush: l.off.rushEpa, defPass: l.def.passEpa, defRush: l.def.rushEpa })),
+    },
   }
 }
 
