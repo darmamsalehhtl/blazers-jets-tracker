@@ -39,7 +39,7 @@
 
 ## 4. Integration check
 
-- [ ] 4.1 Push and confirm the Deploy workflow passes. Check the deployed `data/mock-draft.json` (prospect count, needs for 32 teams, `missingTeams`), then open the live Draft tab and confirm the Jets' round 1 pick shows a mocked player. Report the Jets' mocked picks to the user.
+- [x] 4.1 Push and confirm the Deploy workflow passes. Check the deployed `data/mock-draft.json` (prospect count, needs for 32 teams, `missingTeams`), then open the live Draft tab and confirm the Jets' round 1 pick shows a mocked player. Report the Jets' mocked picks to the user.
 
 ## Workflow follow-up
 
