@@ -43,6 +43,7 @@ export default function DraftPage() {
   if (!draft.data.available || !board) return <ErrorBox error={new Error(draft.data.error ?? 'Draft order not available yet')} />
 
   const { draftYear } = draft.data
+  const mockUnavailable = mockData.error?.message ?? (mockData.data && !mockData.data.available ? (mockData.data.error ?? 'no data') : null)
   const jets = board.picks.filter((p) => p.owner === JETS)
   const shown = board.picks.filter((p) => String(p.round) === round)
 
@@ -60,21 +61,36 @@ export default function DraftPage() {
 
       <Card title="Jets picks" right={`${jets.length} total`}>
         <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4">
-          {jets.map((p) => (
-            <button
-              key={p.overall}
-              onClick={() => setParams({ round: String(p.round) }, { replace: true })}
-              className="shrink-0 rounded-xl border border-border bg-surface-2/60 px-3 py-2 text-left hover:bg-surface-2"
-            >
-              <div className="text-lg leading-tight font-bold tabular-nums">#{p.overall}</div>
-              <div className="text-[11px] whitespace-nowrap text-muted">
-                Rd {p.round}, pick {p.pick}
-                {p.original.abbr !== JETS && ` · from ${p.original.abbr}`}
-              </div>
-            </button>
-          ))}
+          {jets.map((p) => {
+            const pr = mock?.get(p.overall)?.prospect
+            return (
+              <button
+                key={p.overall}
+                onClick={() => setParams({ round: String(p.round) }, { replace: true })}
+                className="shrink-0 rounded-xl border border-border bg-surface-2/60 px-3 py-2 text-left hover:bg-surface-2"
+              >
+                <div className="text-lg leading-tight font-bold tabular-nums">#{p.overall}</div>
+                <div className="text-[11px] whitespace-nowrap text-muted">
+                  Rd {p.round}, pick {p.pick}
+                  {p.original.abbr !== JETS && ` · from ${p.original.abbr}`}
+                </div>
+                {pr && (
+                  <div className="mt-0.5 max-w-44 truncate text-xs font-semibold">
+                    {pr.name}
+                    <span className="font-normal text-muted"> · {pr.pos}</span>
+                  </div>
+                )}
+              </button>
+            )
+          })}
         </div>
       </Card>
+
+      {mockUnavailable && (
+        <p className="rounded-xl border border-border bg-surface-2/60 px-3 py-2 text-xs text-muted">
+          Mock draft unavailable right now ({mockUnavailable}). The draft order still updates live.
+        </p>
+      )}
 
       <Tabs
         tabs={ROUNDS.map((r) => ({ id: r, label: `Round ${r}` }))}
@@ -100,6 +116,14 @@ export default function DraftPage() {
         </a>
         {draft.data.tradesSource === 'snapshot' && ' (last saved copy)'}, refreshed every few hours.
       </p>
+      {md && (
+        <p className="px-1 text-[11px] leading-relaxed text-muted">
+          Mock picks are made by the computer: each team takes the best player left on ESPN's {md.draftYear} prospect board,
+          weighted toward its biggest needs (how its units have played this season, the age of its starters and its recent early
+          picks) and the value of the position, without reaching far past the board. The mock is redone whenever the order changes.
+          Tap a pick to see why it fits.
+        </p>
+      )}
     </div>
   )
 }
