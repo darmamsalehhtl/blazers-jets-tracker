@@ -12,7 +12,8 @@ const CORE = 'https://sports.core.api.espn.com/v2/sports'
 const path = (t: TeamConfig) => `${t.sport}/${t.league}`
 
 export const urls = {
-  scoreboard: (t: TeamConfig) => `${SITE}/${path(t)}/scoreboard`,
+  /** `dates` (YYYYMMDD, ESPN's US Eastern game day) picks a day; omitted = ESPN's current slate. */
+  scoreboard: (t: TeamConfig, dates?: string) => `${SITE}/${path(t)}/scoreboard${qs({ dates })}`,
   schedule: (t: TeamConfig, seasonType?: number, season?: number) =>
     `${SITE}/${path(t)}/teams/${t.id}/schedule${qs({ seasontype: seasonType, season })}`,
   summary: (t: TeamConfig, eventId: string) => `${SITE}/${path(t)}/summary?event=${eventId}`,
