@@ -55,7 +55,7 @@
 
 ## 3. Verify
 
-- [ ] 3.1 Playwright, at 390 px dark and 1200 px light, on `#/calendar`:
+- [x] 3.1 Playwright, at 390 px dark and 1200 px light, on `#/calendar`:
   - the scenarios in `specs/game-calendar/spec.md`: open on today, previous month, Today, team markers, the NBA night, a Sunday with both leagues, no games, spoilers on and off, an upcoming day, opening a game, reload, and back
   - no sideways page scroll
   - no console errors
