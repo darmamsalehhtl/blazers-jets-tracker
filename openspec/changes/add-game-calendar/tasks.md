@@ -2,8 +2,8 @@
 
 ## 1. Data and routing
 
-- [ ] 1.1 Give `urls.scoreboard` in `src/lib/espn.ts` an optional `dates` argument (`YYYYMMDD`). Check that the Live tab's URL stays unchanged and that `npm run build` passes. Commit ("Allow scoreboard lookups by date").
-- [ ] 1.2 Add `src/lib/calendar.ts` with:
+- [x] 1.1 Give `urls.scoreboard` in `src/lib/espn.ts` an optional `dates` argument (`YYYYMMDD`). Check that the Live tab's URL stays unchanged and that `npm run build` passes. Commit ("Allow scoreboard lookups by date").
+- [x] 1.2 Add `src/lib/calendar.ts` with:
   - Eastern-date helpers: today's Eastern date, an event's Eastern day key, `YYYYMMDD` and `YYYY-MM-DD` conversions
   - the month grid builder: Sunday-first weeks, including the padding days
   - the season-for-month rules for the NFL and NBA team schedules (design Decision 2)
