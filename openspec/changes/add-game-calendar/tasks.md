@@ -19,7 +19,7 @@
 
 ## 2. Calendar page
 
-- [ ] 2.1 Build `src/pages/CalendarPage.tsx`:
+- [x] 2.1 Build `src/pages/CalendarPage.tsx`:
   - the month grid with prev, next and Today buttons
   - URL state `d`, `m` and `g` (a date pick pushes a history entry; a game pick replaces it)
   - today highlighted and the selected day marked
