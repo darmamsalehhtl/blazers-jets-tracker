@@ -1,10 +1,11 @@
 import { useSearchParams } from 'react-router-dom'
-import { Card, Logo } from '../components/ui'
-import { easternDay, isDayKey, isMonthKey, monthGrid, parseMonth, scheduleQueries, shiftMonth, today, type DayKey } from '../lib/calendar'
-import { sides, teamLogo, urls, type EspnEvent, type ScheduleResponse } from '../lib/espn'
+import { Card, Empty, ErrorBox, HiddenScore, LiveBadge, Logo, Spinner } from '../components/ui'
+import { easternDay, espnDate, isDayKey, isMonthKey, monthGrid, parseMonth, scheduleQueries, shiftMonth, today, type DayKey } from '../lib/calendar'
+import { scoreText, sides, teamLogo, urls, type Competitor, type EspnEvent, type ScheduleResponse, type ScoreboardResponse } from '../lib/espn'
 import { useSpoilers } from '../lib/spoilers'
 import { TEAM_ORDER, TEAMS, type TeamConfig } from '../lib/teams'
-import { IDLE_MS, usePoll } from '../lib/usePoll'
+import { isWithinHours } from '../lib/useLiveGames'
+import { IDLE_MS, LIVE_MS, usePoll } from '../lib/usePoll'
 
 interface TeamGame {
   team: TeamConfig
@@ -38,6 +39,145 @@ function useTeamGames(month: string): Map<DayKey, TeamGame[]> {
     }
   }
   return byDay
+}
+
+interface DayGame extends TeamGame {
+  /** One of our teams plays in it */
+  ours: boolean
+}
+
+/** Fast while a game is on, every minute just before tip-off, else slow; settled days fetch once. */
+function dayInterval(day: DayKey, isToday: boolean) {
+  return (d: ScoreboardResponse | undefined) => {
+    const comps = (d?.events ?? []).map((e) => e.competitions[0])
+    if (comps.some((c) => c.status.type.state === 'in')) return LIVE_MS
+    if (comps.some((c) => c.status.type.state === 'pre' && isWithinHours(c.date, 1))) return 60_000
+    if (isToday || comps.some((c) => c.status.type.state === 'pre')) return IDLE_MS
+    return day > today() ? IDLE_MS : null
+  }
+}
+
+/** Every NFL and NBA game on `day`: ours first, then NFL, then NBA, each by start time. */
+function useDayGames(day: DayKey, isToday: boolean) {
+  const interval = dayInterval(day, isToday)
+  const [a, b] = TEAM_ORDER.map((k) => TEAMS[k])
+  const polls = [
+    { team: a, poll: usePoll<ScoreboardResponse>(urls.scoreboard(a, espnDate(day)), interval) },
+    { team: b, poll: usePoll<ScoreboardResponse>(urls.scoreboard(b, espnDate(day)), interval) },
+  ]
+  const games: DayGame[] = polls.flatMap(({ team, poll }) =>
+    (poll.data?.events ?? []).map((event) => ({
+      team,
+      event,
+      ours: event.competitions[0].competitors.some((c) => c.team.id === team.id),
+    })),
+  )
+  const league = (g: DayGame) => TEAM_ORDER.indexOf(g.team.key)
+  games.sort((a, b) => Number(b.ours) - Number(a.ours) || league(a) - league(b) || a.event.date.localeCompare(b.event.date))
+  return {
+    games,
+    loading: polls.some((p) => p.poll.loading && !p.poll.data),
+    failed: polls.filter((p) => p.poll.error && !p.poll.data),
+  }
+}
+
+function DayGames({ day, isToday, picked, onPick }: { day: DayKey; isToday: boolean; picked: string | null; onPick: (id: string) => void }) {
+  const { games, loading, failed } = useDayGames(day, isToday)
+  const title = dayLabel(day, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+  return (
+    <Card title={title} right={games.length ? `${games.length} game${games.length === 1 ? '' : 's'}` : undefined} pad={false}>
+      {failed.length === 2 ? (
+        <div className="px-4 pb-3">
+          <ErrorBox error={failed[0].poll.error!} retry={() => failed.forEach((f) => f.poll.refresh())} />
+        </div>
+      ) : loading && !games.length ? (
+        <Spinner label="Loading games" />
+      ) : (
+        <>
+          {failed.map((f) => (
+            <p key={f.team.key} className="px-4 pb-2 text-xs text-bad">
+              Couldn't load {f.team.league.toUpperCase()} games.{' '}
+              <button type="button" onClick={f.poll.refresh} className="underline">
+                Try again
+              </button>
+            </p>
+          ))}
+          {games.length ? (
+            <ul>
+              {games.map((g) => (
+                <GameRow key={g.event.id} game={g} active={g.event.id === picked} onPick={() => onPick(g.event.id)} />
+              ))}
+            </ul>
+          ) : (
+            !failed.length && <Empty>No NFL or NBA games {isToday ? 'today' : 'on this day'}.</Empty>
+          )}
+        </>
+      )}
+    </Card>
+  )
+}
+
+function GameRow({ game: { team, event, ours }, active, onPick }: { game: DayGame; active: boolean; onPick: () => void }) {
+  const comp = event.competitions[0]
+  const st = comp.status.type
+  const hidden = !useSpoilers().canShow({ id: event.id, state: st.state })
+  const away = comp.competitors.find((c) => c.homeAway === 'away') ?? comp.competitors[0]
+  const home = comp.competitors.find((c) => c.homeAway === 'home') ?? comp.competitors[1]
+  const tv = comp.broadcasts?.[0]?.media?.shortName ?? comp.broadcasts?.[0]?.names?.[0]
+  const time = new Date(comp.date).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+  const odd = st.name === 'STATUS_POSTPONED' || st.name === 'STATUS_CANCELED'
+  return (
+    <li className={`flex items-center border-t border-border/60 first:border-0 ${active ? 'bg-surface-2' : 'hover:bg-surface-2'}`}>
+      <button type="button" onClick={onPick} aria-pressed={active} className="flex min-w-0 flex-1 items-center gap-3 px-4 py-2.5 text-left">
+        <span className="w-9 shrink-0 text-[10px] font-semibold tracking-wider text-muted">
+          {team.league.toUpperCase()}
+          {ours && <span className="ml-0.5 text-text">★</span>}
+        </span>
+        <span className="min-w-0 flex-1 space-y-1">
+          <TeamLine c={away} state={st.state} hidden={hidden} />
+          <TeamLine c={home} state={st.state} hidden={hidden} />
+        </span>
+        <span className="w-24 shrink-0 text-right text-xs text-muted">
+          {st.state === 'in' ? (
+            <span className="flex flex-col items-end gap-1">
+              <LiveBadge />
+              <span className="text-text">{st.shortDetail}</span>
+            </span>
+          ) : odd ? (
+            st.description
+          ) : st.state === 'pre' ? (
+            <>
+              <span className="block font-medium text-text">{time}</span>
+              {tv}
+            </>
+          ) : hidden ? (
+            'Final'
+          ) : (
+            st.shortDetail
+          )}
+        </span>
+      </button>
+      {st.completed && hidden && (
+        <div className="shrink-0 pr-4">
+          <HiddenScore id={event.id} />
+        </div>
+      )}
+    </li>
+  )
+}
+
+function TeamLine({ c, state, hidden }: { c: Competitor; state: string; hidden: boolean }) {
+  const lost = state === 'post' && c.winner === false && !hidden
+  return (
+    <span className={`flex items-center gap-2 text-sm ${lost ? 'text-muted' : ''}`}>
+      <Logo src={teamLogo(c.team)} alt="" size={20} />
+      <span className="min-w-0 flex-1 truncate font-medium">
+        <span className="sm:hidden">{c.team.abbreviation}</span>
+        <span className="hidden sm:inline">{c.team.displayName}</span>
+      </span>
+      {state !== 'pre' && !hidden && <span className="font-bold tabular-nums">{scoreText(c.score)}</span>}
+    </span>
+  )
 }
 
 const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
@@ -80,9 +220,7 @@ export default function CalendarPage() {
       </div>
       <div className="grid items-start gap-3 md:grid-cols-[22rem_minmax(0,1fr)]">
         <MonthGrid month={month} day={day} todayKey={todayKey} onPick={pickDay} onMonth={showMonth} onToday={goToday} />
-        <Card title={dayLabel(day, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}>
-          <p className="text-sm text-muted">Games load here.</p>
-        </Card>
+        <DayGames day={day} isToday={day === todayKey} picked={params.get('g')} onPick={(id) => update({ g: id }, true)} />
       </div>
     </div>
   )

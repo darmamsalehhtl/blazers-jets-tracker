@@ -30,7 +30,7 @@
   - with spoilers off, no W or L appears
 
   Commit ("Mark Jets and Blazers games on the calendar").
-- [ ] 2.3 List the selected day's NFL and NBA games from the two date-scoped scoreboards:
+- [x] 2.3 List the selected day's NFL and NBA games from the two date-scoped scoreboards:
   - our teams first and starred, then NFL, then NBA, each by start time
   - final, live or upcoming state (the start time in the user's time zone, plus TV)
   - `HiddenScore` when spoilers hide a final
