@@ -1,6 +1,44 @@
 import { useSearchParams } from 'react-router-dom'
-import { Card } from '../components/ui'
-import { isDayKey, isMonthKey, monthGrid, parseMonth, shiftMonth, today, type DayKey } from '../lib/calendar'
+import { Card, Logo } from '../components/ui'
+import { easternDay, isDayKey, isMonthKey, monthGrid, parseMonth, scheduleQueries, shiftMonth, today, type DayKey } from '../lib/calendar'
+import { sides, teamLogo, urls, type EspnEvent, type ScheduleResponse } from '../lib/espn'
+import { useSpoilers } from '../lib/spoilers'
+import { TEAM_ORDER, TEAMS, type TeamConfig } from '../lib/teams'
+import { IDLE_MS, usePoll } from '../lib/usePoll'
+
+interface TeamGame {
+  team: TeamConfig
+  event: EspnEvent
+}
+
+/** The Jets' and Blazers' games in this month's seasons, by Eastern game day. */
+function useTeamGames(month: string): Map<DayKey, TeamGame[]> {
+  // A month needs at most two schedule types per team, so the hook count is fixed.
+  const urlsFor = (t: TeamConfig) => {
+    const q = scheduleQueries(t.league, month)
+    return [0, 1].map((i) => (q[i] ? urls.schedule(t, q[i].type, q[i].season) : null))
+  }
+  const [a, b] = TEAM_ORDER.map((k) => TEAMS[k])
+  const [a1, a2] = urlsFor(a)
+  const [b1, b2] = urlsFor(b)
+  const polls = [
+    { team: a, poll: usePoll<ScheduleResponse>(a1, IDLE_MS) },
+    { team: a, poll: usePoll<ScheduleResponse>(a2, IDLE_MS) },
+    { team: b, poll: usePoll<ScheduleResponse>(b1, IDLE_MS) },
+    { team: b, poll: usePoll<ScheduleResponse>(b2, IDLE_MS) },
+  ]
+  const byDay = new Map<DayKey, TeamGame[]>()
+  const seen = new Set<string>()
+  for (const { team, poll } of polls) {
+    for (const event of poll.data?.events ?? []) {
+      if (seen.has(event.id)) continue
+      seen.add(event.id)
+      const k = easternDay(event.date)
+      byDay.set(k, [...(byDay.get(k) ?? []), { team, event }])
+    }
+  }
+  return byDay
+}
 
 const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
 
@@ -65,6 +103,7 @@ function MonthGrid({
   onMonth: (m: string) => void
   onToday: () => void
 }) {
+  const teamGames = useTeamGames(month)
   const [y, mo] = parseMonth(month)
   const title = new Date(Date.UTC(y, mo - 1, 15)).toLocaleDateString(undefined, { month: 'long', year: 'numeric', timeZone: 'UTC' })
   return (
@@ -104,11 +143,37 @@ function MonthGrid({
                 } ${c.outside && !selected ? 'text-muted/60' : ''}`}
               >
                 <span className={isToday && !selected ? 'rounded-full px-1.5 font-bold ring-1 ring-text' : isToday ? 'font-bold' : ''}>{c.day}</span>
+                <span className="flex gap-0.5">
+                  {teamGames.get(c.key)?.map((g) => <TeamMark key={g.event.id} game={g} />)}
+                </span>
               </button>
             )
           })}
       </div>
     </section>
+  )
+}
+
+/** Opponent logo for a Jets or Blazers game, plus W/L when spoilers allow. */
+function TeamMark({ game: { team, event } }: { game: TeamGame }) {
+  const { canShow } = useSpoilers()
+  const comp = event.competitions[0]
+  const { us, them } = sides(comp, team.id)
+  const logo = teamLogo(them.team)
+  const result =
+    comp.status.type.completed && canShow({ id: event.id, state: comp.status.type.state }) ? (us.winner ? 'W' : them.winner ? 'L' : 'T') : null
+  return (
+    <span className="flex flex-col items-center leading-none" title={`${team.nickname} ${us.homeAway === 'home' ? 'vs' : '@'} ${them.team.displayName}`}>
+      {logo ? (
+        <span className="rounded-full bg-white p-px">
+          <Logo src={logo} alt={`${team.nickname} vs ${them.team.abbreviation}`} size={16} />
+        </span>
+      ) : (
+        // Some exhibition opponents (e.g. international clubs) have no logo.
+        <span className="text-[9px] leading-[18px] font-semibold">{them.team.abbreviation}</span>
+      )}
+      {result && <span className={`text-[9px] font-bold ${result === 'W' ? 'text-good' : result === 'L' ? 'text-bad' : ''}`}>{result}</span>}
+    </span>
   )
 }
 

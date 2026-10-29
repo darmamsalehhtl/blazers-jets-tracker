@@ -25,7 +25,7 @@
   - today highlighted and the selected day marked
 
   Verify in the dev server: Today, prev and next work, and reload keeps the date. Commit ("Show a month calendar on the Calendar tab").
-- [ ] 2.2 Fetch the Jets and Blazers schedules for the visible month's seasons and mark their game days with the opponent logo. Show W or L only when `canShow` allows it. Verify:
+- [x] 2.2 Fetch the Jets and Blazers schedules for the visible month's seasons and mark their game days with the opponent logo. Show W or L only when `canShow` allows it. Verify:
   - October 2026 shows the Blazers' games and the Jets' games on the right days
   - with spoilers off, no W or L appears
 
