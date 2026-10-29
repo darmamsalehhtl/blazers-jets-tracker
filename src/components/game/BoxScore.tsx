@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { teamLogo } from '../../lib/espn'
-import type { BoxAthlete, BoxGroup, Summary } from '../../lib/summary'
+import { injuryLabel, type BoxAthlete, type BoxGroup, type InjuryGroup, type Summary } from '../../lib/summary'
 import type { TeamConfig } from '../../lib/teams'
 import { labelColumns, StatTable, type Column } from '../StatTable'
 import { Card, Empty, Logo } from '../ui'
+import { StatusPill } from './GameInfo'
+
+type Injury = InjuryGroup['injuries'][number]
 
 /** Parse "7-15" style made-attempted strings. */
 export function madeAtt(v?: string): [number, number] {
@@ -45,14 +48,17 @@ export function BoxScore({ s, team }: { s: Summary; team: TeamConfig }) {
 
   if (!players.length) return <Empty>Box score shows up once the game starts.</Empty>
   const tp = players[side] ?? players[0]
-  const open = (a: BoxAthlete) => nav(`/player/${team.key}/${a.athlete.id}`)
+  const open = (a: { athlete: { id: string } }) => nav(`/player/${team.key}/${a.athlete.id}`)
+  // ESPN leaves injured players out of the box score; add them from the summary's injury report.
+  const inBox = new Set(tp.statistics.flatMap((g) => g.athletes.map((a) => a.athlete.id)))
+  const injured = (s.injuries?.find((g) => g.team.id === tp.team.id)?.injuries ?? []).filter((i) => !inBox.has(i.athlete.id))
 
   return (
     <div className="space-y-3">
       <TeamToggle s={s} value={side} onChange={setSide} />
       {tp.statistics.map((g, gi) =>
         team.league === 'nba' ? (
-          <NbaGroup key={gi} g={g} onOpen={open} />
+          <NbaGroup key={gi} g={g} injured={gi === 0 ? injured : []} onOpen={open} />
         ) : (
           <Card key={gi} title={g.text ?? g.name} pad={false}>
             <StatTable
@@ -85,7 +91,7 @@ function nameCol(): Column<BoxAthlete> {
   }
 }
 
-function NbaGroup({ g, onOpen }: { g: BoxGroup; onOpen: (a: BoxAthlete) => void }) {
+function NbaGroup({ g, injured, onOpen }: { g: BoxGroup; injured: Injury[]; onOpen: (a: { athlete: { id: string } }) => void }) {
   const ix = (l: string) => g.labels.indexOf(l)
   const tsCol: Column<BoxAthlete> = {
     key: 'ts',
@@ -133,7 +139,7 @@ function NbaGroup({ g, onOpen }: { g: BoxGroup; onOpen: (a: BoxAthlete) => void 
           }
         />
       </Card>
-      {dnp.length > 0 && (
+      {(dnp.length > 0 || injured.length > 0) && (
         <Card title="Did not play">
           <ul className="space-y-1 text-sm">
             {dnp.map((a) => (
@@ -144,7 +150,31 @@ function NbaGroup({ g, onOpen }: { g: BoxGroup; onOpen: (a: BoxAthlete) => void 
                 <span className="text-right text-xs text-muted">{a.reason ?? 'DNP'}</span>
               </li>
             ))}
+            {injured.map((i) => {
+              const label = injuryLabel(i.details)
+              const ret = i.details?.returnDate
+              return (
+                <li key={i.athlete.id} className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <button onClick={() => onOpen(i)} className="text-left font-medium hover:underline">
+                      {i.athlete.displayName}
+                    </button>
+                    {(label || ret) && (
+                      <div className="text-xs text-muted">
+                        {[label, ret && `Est. return ${new Date(ret).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </div>
+                    )}
+                  </div>
+                  <StatusPill status={i.status} />
+                </li>
+              )
+            })}
           </ul>
+          {injured.length > 0 && (
+            <p className="mt-2 text-[11px] text-muted">Injury info is ESPN's current report and may differ from game day.</p>
+          )}
         </Card>
       )}
     </>
