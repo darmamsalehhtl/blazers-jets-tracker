@@ -2,7 +2,7 @@
 
 ## 1. Shared injury label
 
-- [ ] 1.1 Add an exported `injuryLabel(details)` helper to `src/lib/summary.ts`. It joins side, type and detail, removes duplicates, and drops empty or "Not Specified" parts. Switch the Injuries card in `src/components/game/GameInfo.tsx` to use it. Verify that `npm run build` and `npm run lint` pass and that the Info tab of a finished Blazers game (e.g. event 401909880) shows the same injury lines as before. Commit ("Share the injury label between game views").
+- [x] 1.1 Add an exported `injuryLabel(details)` helper to `src/lib/summary.ts`. It joins side, type and detail, removes duplicates, and drops empty or "Not Specified" parts. Switch the Injuries card in `src/components/game/GameInfo.tsx` to use it. Verify that `npm run build` and `npm run lint` pass and that the Info tab of a finished Blazers game (e.g. event 401909880) shows the same injury lines as before. Commit ("Share the injury label between game views").
 
 ## 2. Injured players in Did not play
 

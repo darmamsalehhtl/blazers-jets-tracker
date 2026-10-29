@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { headshotUrl, teamLogo } from '../../lib/espn'
 import { gameDate } from '../../lib/format'
-import type { Summary } from '../../lib/summary'
+import { injuryLabel, type Summary } from '../../lib/summary'
 import type { TeamConfig } from '../../lib/teams'
 import { useSpoilers } from '../../lib/spoilers'
 import { Card, Headshot, HiddenScore, Logo } from '../ui'
@@ -61,7 +61,7 @@ export function GameInfo({ s, team }: { s: Summary; team: TeamConfig }) {
                         <span className="ml-1 text-xs text-muted">{inj.athlete.position?.abbreviation}</span>
                         {inj.details?.type && (
                           <div className="text-xs text-muted">
-                            {[...new Set([inj.details.side, inj.details.type, inj.details.detail])].filter((x) => x && x !== 'Not Specified').join(' ')}
+                            {injuryLabel(inj.details)}
                             {inj.details.returnDate && ` · return ${new Date(inj.details.returnDate).toLocaleDateString()}`}
                           </div>
                         )}

@@ -140,6 +140,12 @@ export interface InjuryGroup {
   }[]
 }
 
+/** "Right Knee Surgery" from an injury's side/type/detail, skipping blanks and "Not Specified". */
+export function injuryLabel(details?: InjuryGroup['injuries'][number]['details']) {
+  if (!details) return ''
+  return [...new Set([details.side, details.type, details.detail])].filter((x) => x && x !== 'Not Specified').join(' ')
+}
+
 export interface PickCenter {
   provider?: { name: string }
   details?: string
