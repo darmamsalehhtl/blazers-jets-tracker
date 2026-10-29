@@ -42,12 +42,17 @@ function Shell() {
           <NavLink to="/mvp" className={navClass}>
             MVP
           </NavLink>
+          {/* Icon only on phones: the header is full there. */}
+          <NavLink to="/calendar" aria-label="Calendar" title="Calendar" className={navClass}>
+            <CalendarIcon />
+            <span className="hidden sm:inline">Calendar</span>
+          </NavLink>
           <button
             onClick={spoilers.toggle}
             aria-pressed={spoilers.show}
             aria-label={spoilers.show ? 'Hide spoilers' : 'Show spoilers'}
             title={spoilers.show ? 'Spoilers on: scores shown' : 'Spoilers off: final scores hidden'}
-            className={`flex h-9 w-8 shrink-0 sm:w-9 items-center justify-center rounded-lg hover:bg-surface-2 hover:text-text sm:ml-1 ${
+            className={`flex h-9 w-7 shrink-0 min-[380px]:w-8 sm:w-9 items-center justify-center rounded-lg hover:bg-surface-2 hover:text-text sm:ml-1 ${
               spoilers.show ? 'text-text' : 'text-muted'
             }`}
           >
@@ -56,7 +61,7 @@ function Shell() {
           <button
             onClick={toggle}
             aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-            className="flex h-9 w-8 shrink-0 sm:w-9 items-center justify-center rounded-lg text-muted hover:bg-surface-2 hover:text-text"
+            className="flex h-9 w-7 shrink-0 min-[380px]:w-8 sm:w-9 items-center justify-center rounded-lg text-muted hover:bg-surface-2 hover:text-text"
           >
             {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
           </button>
@@ -72,9 +77,18 @@ function Shell() {
 }
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
-  `flex shrink-0 items-center gap-1.5 rounded-lg px-1.5 py-1.5 text-sm font-medium sm:px-2.5 ${
+  `flex shrink-0 items-center gap-1.5 rounded-lg px-1 py-1.5 text-sm font-medium min-[380px]:px-1.5 sm:px-2.5 ${
     isActive ? 'bg-surface-2 text-text' : 'text-muted hover:text-text'
   }`
+
+function CalendarIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="sm:hidden">
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M16 3v4M8 3v4M3 10h18" />
+    </svg>
+  )
+}
 
 function SunIcon() {
   return (

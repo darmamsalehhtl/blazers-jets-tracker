@@ -15,7 +15,7 @@
   - July has no NFL or NBA season
 
   Commit ("Add calendar date helpers").
-- [ ] 1.3 Add the `calendar` route in `src/App.tsx` and a Calendar `NavLink` in `src/components/Layout.tsx`: an icon on phones, text from `sm` up, with `aria-label`. In Playwright at 390 px, check that the header has no horizontal overflow and that every tab is visible. Commit ("Add Calendar tab").
+- [x] 1.3 Add the `calendar` route in `src/App.tsx` and a Calendar `NavLink` in `src/components/Layout.tsx`: an icon on phones, text from `sm` up, with `aria-label`. In Playwright at 390 px, check that the header has no horizontal overflow and that every tab is visible. Commit ("Add Calendar tab").
 
 ## 2. Calendar page
 

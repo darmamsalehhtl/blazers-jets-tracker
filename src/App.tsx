@@ -1,6 +1,7 @@
 import { HashRouter, Navigate, Route, Routes, useParams } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { Layout } from './components/Layout'
+import CalendarPage from './pages/CalendarPage'
 import GamePage from './pages/GamePage'
 import DraftPage from './pages/DraftPage'
 import Home from './pages/Home'
@@ -17,6 +18,7 @@ export default function App() {
         <Route element={<Layout />}>
           <Route index element={<Home />} />
           <Route path="live" element={<LivePage />} />
+          <Route path="calendar" element={<CalendarPage />} />
           <Route path="draft" element={<DraftPage />} />
           <Route path="mvp" element={<MvpPage />} />
           <Route path="team/:team" element={<Keyed by="team" page={TeamPage} />} />
