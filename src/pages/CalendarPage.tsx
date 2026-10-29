@@ -1,4 +1,6 @@
+import { useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { GameView } from '../components/game/GameView'
 import { Card, Empty, ErrorBox, HiddenScore, LiveBadge, Logo, Spinner } from '../components/ui'
 import { easternDay, espnDate, isDayKey, isMonthKey, monthGrid, parseMonth, scheduleQueries, shiftMonth, today, type DayKey } from '../lib/calendar'
 import { scoreText, sides, teamLogo, urls, type Competitor, type EspnEvent, type ScheduleResponse, type ScoreboardResponse } from '../lib/espn'
@@ -81,8 +83,15 @@ function useDayGames(day: DayKey, isToday: boolean) {
   }
 }
 
-function DayGames({ day, isToday, picked, onPick }: { day: DayKey; isToday: boolean; picked: string | null; onPick: (id: string) => void }) {
-  const { games, loading, failed } = useDayGames(day, isToday)
+function DayGames({
+  games,
+  loading,
+  failed,
+  day,
+  isToday,
+  picked,
+  onPick,
+}: ReturnType<typeof useDayGames> & { day: DayKey; isToday: boolean; picked?: string; onPick: (id: string) => void }) {
   const title = dayLabel(day, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
   return (
     <Card title={title} right={games.length ? `${games.length} game${games.length === 1 ? '' : 's'}` : undefined} pad={false}>
@@ -211,6 +220,20 @@ export default function CalendarPage() {
   const pickDay = (k: DayKey) => k !== day && update({ d: k, m: undefined, g: undefined }, false)
   const showMonth = (k: string) => update({ m: k === day.slice(0, 7) ? undefined : k }, true)
   const goToday = () => update({ d: todayKey, m: undefined, g: undefined }, day === todayKey)
+  const dayGames = useDayGames(day, day === todayKey)
+  const picked = dayGames.games.find((g) => g.event.id === params.get('g'))
+  const gameRef = useRef<HTMLDivElement>(null)
+  // On a phone the stats open below a long list, so bring them into view.
+  const scrollTo = useRef(false)
+  useEffect(() => {
+    if (!scrollTo.current || !picked) return
+    scrollTo.current = false
+    gameRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [picked])
+  const pickGame = (id: string) => {
+    scrollTo.current = true
+    update({ g: id }, true)
+  }
 
   return (
     <div className="space-y-3">
@@ -220,8 +243,14 @@ export default function CalendarPage() {
       </div>
       <div className="grid items-start gap-3 md:grid-cols-[22rem_minmax(0,1fr)]">
         <MonthGrid month={month} day={day} todayKey={todayKey} onPick={pickDay} onMonth={showMonth} onToday={goToday} />
-        <DayGames day={day} isToday={day === todayKey} picked={params.get('g')} onPick={(id) => update({ g: id }, true)} />
+        <DayGames {...dayGames} day={day} isToday={day === todayKey} picked={picked?.event.id} onPick={pickGame} />
       </div>
+      {picked && (
+        // Tall enough to scroll to before the stats have loaded.
+        <div ref={gameRef} className="min-h-dvh scroll-mt-20">
+          <GameView key={picked.event.id} teamKey={picked.team.key} eventId={picked.event.id} />
+        </div>
+      )}
     </div>
   )
 }

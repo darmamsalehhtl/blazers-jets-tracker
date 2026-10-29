@@ -44,7 +44,7 @@
   - with spoilers off, no finals are shown
 
   Commit ("List every NFL and NBA game on the picked date").
-- [ ] 2.4 Open the tapped game's `GameView` below the list (`g` in the URL). Verify:
+- [x] 2.4 Open the tapped game's `GameView` below the list (`g` in the URL). Verify:
   - a finished NBA game shows its box score
   - a non-Jets NFL game shows its stats
   - reload keeps the same game open
