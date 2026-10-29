@@ -245,6 +245,10 @@ export default function CalendarPage() {
         <MonthGrid month={month} day={day} todayKey={todayKey} onPick={pickDay} onMonth={showMonth} onToday={goToday} />
         <DayGames {...dayGames} day={day} isToday={day === todayKey} picked={picked?.event.id} onPick={pickGame} />
       </div>
+      <p className="text-xs text-muted">
+        Logos on the calendar mark Jets and Blazers games (W/L once spoilers allow). Days follow ESPN&apos;s US Eastern game day, so a late
+        West Coast game stays on the date it started there, and &ldquo;Today&rdquo; moves on at 6 am Eastern.
+      </p>
       {picked && (
         // Tall enough to scroll to before the stats have loaded.
         <div ref={gameRef} className="min-h-dvh scroll-mt-20">

@@ -51,7 +51,7 @@
   - changing the date clears it
 
   Commit ("Open a game's stats from the calendar").
-- [ ] 2.5 Add a footnote explaining that days follow ESPN's US Eastern game day. Add the Calendar tab to the README's feature list and check that the README renders correctly. Commit ("Document the Calendar tab").
+- [x] 2.5 Add a footnote explaining that days follow ESPN's US Eastern game day. Add the Calendar tab to the README's feature list and check that the README renders correctly. Commit ("Document the Calendar tab").
 
 ## 3. Verify
 

@@ -14,7 +14,11 @@ export function easternDay(at: string | Date | number): DayKey {
   return eastern.format(new Date(at))
 }
 
-export const today = () => easternDay(Date.now())
+/**
+ * The current game day. It turns over at 6 am Eastern rather than midnight, so
+ * a West Coast game still running after midnight ET keeps "today" on its date.
+ */
+export const today = () => easternDay(Date.now() - 6 * 3_600_000)
 
 /** `YYYY-MM-DD` → `YYYYMMDD` for ESPN's scoreboard. */
 export const espnDate = (d: DayKey) => d.replaceAll('-', '')

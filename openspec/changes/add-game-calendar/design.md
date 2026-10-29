@@ -69,7 +69,7 @@
 ## Risks / Trade-offs
 
 - [ESPN's date semantics change or `dates` breaks] → The list shows the existing `ErrorBox` with a retry. The grid markers come from a different endpoint and still work.
-- [Games past midnight Eastern, or the 2–3 a.m. ET window] → A day is always ESPN's game day, the same as the scoreboard. "Today" uses the Eastern date, so at 11:30 pm in Portland, "today" is already tomorrow's slate. That's acceptable, and the footnote says days follow ESPN's US Eastern game day.
+- [Games past midnight Eastern, or the 2–3 a.m. ET window] → A day is always ESPN's game day, the same as the scoreboard. "Today" is the Eastern date 6 hours ago (it turns over at 6 am ET, not midnight), so a Blazers game still live at 11 pm in Portland, which is 2 am ET, stays on today's list. The footnote says days follow ESPN's US Eastern game day.
 - [Far past seasons] → ESPN serves old scoreboards and schedules, but some older games may lack a full box score. `GameView` already handles missing sections.
 - [Header crowding] → The phone view is icon-only (Decision 7) and verified at 390 px.
 - [Spoilers via grid markers] → W/L only through `canShow`. The opponent logo itself isn't a spoiler, since schedules are public.
