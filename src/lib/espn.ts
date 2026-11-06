@@ -103,6 +103,8 @@ export interface Competition {
   broadcasts?: { media?: { shortName?: string }; names?: string[] }[]
   situation?: Situation
   notes?: { headline?: string }[]
+  /** Playoff series state (NBA): wins per team id */
+  series?: { type?: string; summary?: string; completed?: boolean; totalCompetitions?: number; competitors?: { id: string; wins: number }[] }
 }
 
 export interface Situation {

@@ -1,6 +1,7 @@
 // Playoff picture: league rules, seeding helpers and (further down) the
 // postseason bracket. Seeds are ESPN's `playoffseed`, never re-broken here.
 
+import type { EspnEvent } from './espn'
 import type { League } from './teams'
 import { sn, sv, type StandingEntry, type StandingsNode } from './standings'
 
@@ -274,4 +275,230 @@ export function phaseOf(seasonType: number | undefined): Phase | undefined {
   if (seasonType === 2) return 'seeding'
   if (seasonType === 3 || seasonType === 5) return 'bracket'
   return 'offseason'
+}
+
+// ---------- Bracket ----------
+
+export interface SeriesTeam {
+  id: string
+  abbr: string
+  seed: number | null
+  wins: number
+}
+
+/** One matchup: an NBA series, or a single NFL game (wins 0/1). */
+export interface Series {
+  key: string
+  teams: [SeriesTeam, SeriesTeam]
+  games: PostseasonGame[]
+  /** Best-of length (1 for the NFL and the play-in) */
+  bestOf: number
+  winner?: string
+  live: boolean
+}
+
+export interface Slot {
+  series?: Series
+  /** Shown while the matchup isn't set, e.g. "Winner of 4 v 5" */
+  placeholder?: string
+  /** Known side(s) of an unset matchup, e.g. the 1 seed waiting for the play-in */
+  known?: { abbr: string; seed: number | null }[]
+}
+
+export interface BracketRound {
+  name: string
+  /** Per conference abbreviation, or 'final' for the championship */
+  byConf: Record<string, Slot[]>
+}
+
+export interface Bracket {
+  league: League
+  label: string
+  confs: string[]
+  /** NBA play-in games per conference */
+  playIn: Record<string, Series[]>
+  /** NFL first-round byes per conference */
+  byes: Record<string, { abbr: string; seed: number | null }[]>
+  rounds: BracketRound[]
+  final: Slot
+  champion?: string
+}
+
+const NBA_ROUND_NOTES: [RegExp, number][] = [
+  [/1st Round/i, 0],
+  [/Semifinals/i, 1],
+  [/(East|West)(ern Conference)? Finals/i, 2],
+  [/NBA Finals/i, 3],
+]
+const NFL_ROUND_NOTES: [RegExp, number][] = [
+  [/Wild Card/i, 0],
+  [/Divisional/i, 1],
+  [/Championship/i, 2],
+  [/Super Bowl/i, 3],
+]
+
+function roundFromNote(league: League, note: string): number | undefined {
+  return (league === 'nba' ? NBA_ROUND_NOTES : NFL_ROUND_NOTES).find(([re]) => re.test(note))?.[1]
+}
+
+/** Scoreboard event → bracket game (same shape the build writes). */
+export function toPostseasonGame(e: EspnEvent): PostseasonGame {
+  const c = e.competitions[0]
+  const series = c.series?.type === 'playoff' ? c.series : undefined
+  return {
+    id: e.id,
+    date: e.date,
+    seasonType: e.season?.type ?? 3,
+    note: c.notes?.[0]?.headline ?? '',
+    state: c.status.type.state,
+    detail: c.status.type.shortDetail,
+    teams: c.competitors.map((t) => ({
+      id: t.team.id,
+      abbr: t.team.abbreviation,
+      home: t.homeAway === 'home',
+      score: t.score === undefined || t.score === '' ? null : Number(typeof t.score === 'string' ? t.score : t.score.value ?? t.score.displayValue),
+      winner: t.winner ?? false,
+      seriesWins: series?.competitors?.find((s) => s.id === t.team.id)?.wins ?? null,
+    })),
+    series: series ? { summary: series.summary ?? '', completed: !!series.completed, total: series.totalCompetitions ?? 7 } : undefined,
+  }
+}
+
+/** Precomputed games with today's scoreboard laid over them (newer state wins by id). */
+export function mergeGames(base: PostseasonGame[], live: EspnEvent[] | undefined): PostseasonGame[] {
+  const byId = new Map(base.map((g) => [g.id, g]))
+  for (const e of live ?? []) {
+    const t = e.season?.type
+    if (t !== 3 && t !== 5) continue
+    const g = toPostseasonGame(e)
+    if (g.teams.length === 2 && g.teams.every((x) => x.abbr && x.abbr !== 'TBD')) byId.set(g.id, g)
+  }
+  return [...byId.values()].sort((a, b) => a.date.localeCompare(b.date))
+}
+
+function makeSeries(games: PostseasonGame[], seeds: PlayoffsLeague['postseason']['seeds'], bestOf: number): Series {
+  const first = games[0]
+  const [a, b] = first.teams
+  const last = [...games].reverse().find((g) => g.teams.every((t) => t.seriesWins !== null))
+  const counted = (id: string) => games.filter((g) => g.state === 'post' && g.teams.find((t) => t.id === id)?.winner).length
+  const side = (t: PostseasonTeam): SeriesTeam => ({
+    id: t.id,
+    abbr: t.abbr,
+    seed: seeds[t.abbr]?.seed ?? null,
+    wins: Math.max(counted(t.id), last?.teams.find((x) => x.id === t.id)?.seriesWins ?? 0),
+  })
+  // Higher seed first.
+  const teams = [side(a), side(b)].sort((x, y) => (x.seed ?? 99) - (y.seed ?? 99)) as [SeriesTeam, SeriesTeam]
+  const need = Math.ceil(bestOf / 2)
+  const winner = teams.find((t) => t.wins >= need)?.abbr
+  return {
+    key: games.map((g) => g.id).join('-'),
+    teams,
+    games,
+    bestOf,
+    winner,
+    live: games.some((g) => g.state === 'in'),
+  }
+}
+
+const pairKey = (g: PostseasonGame) => g.teams.map((t) => t.abbr).sort().join('|')
+
+/** Build the bracket for one league's postseason. */
+export function buildBracket(league: League, post: PlayoffsLeague['postseason'], games: PostseasonGame[]): Bracket {
+  const rules = PLAYOFF_RULES[league]
+  const seeds = post.seeds
+  const confOf = (abbr: string) => seeds[abbr]?.conf
+  const confs = [...new Set(Object.values(seeds).map((s) => s.conf))].sort()
+  const seedTeam = (conf: string, seed: number) => {
+    const abbr = Object.keys(seeds).find((k) => seeds[k].conf === conf && seeds[k].seed === seed)
+    return abbr ? { abbr, seed } : undefined
+  }
+
+  // Play-in: every game is its own one-game "series".
+  const playIn: Record<string, Series[]> = {}
+  for (const g of games.filter((x) => x.seasonType === 5)) {
+    const conf = confOf(g.teams[0].abbr)
+    if (conf) (playIn[conf] ??= []).push(makeSeries([g], seeds, 1))
+  }
+
+  // Group playoff games into matchups by round and team pair.
+  const bestOf = league === 'nba' ? 7 : 1
+  const groups = new Map<string, { round: number; games: PostseasonGame[] }>()
+  const history = new Map<string, number>()
+  for (const g of games.filter((x) => x.seasonType === 3)) {
+    const pk = pairKey(g)
+    const existing = [...groups.entries()].find(([k]) => k.endsWith(`#${pk}`))
+    if (existing && league === 'nba') {
+      existing[1].games.push(g)
+      continue
+    }
+    // Fallback when the note is unfamiliar: a team's n-th matchup is round n.
+    const round = roundFromNote(league, g.note) ?? Math.max(...g.teams.map((t) => history.get(t.abbr) ?? 0))
+    for (const t of g.teams) history.set(t.abbr, round + 1)
+    groups.set(`${round}#${pk}`, { round, games: [g] })
+  }
+  const matchups = [...groups.values()].map((m) => ({ round: m.round, series: makeSeries(m.games, seeds, bestOf) }))
+
+  const rounds: BracketRound[] = rules.rounds.map((name) => ({ name, byConf: {} }))
+  for (const conf of confs) {
+    const inConf = (r: number) =>
+      matchups.filter((m) => m.round === r && m.series.teams.every((t) => confOf(t.abbr) === conf)).map((m) => m.series)
+    rounds.forEach((round, r) => {
+      round.byConf[conf] = league === 'nba' ? nbaSlots(r, inConf(r), conf, seedTeam) : nflSlots(r, inConf(r), conf, seedTeam)
+    })
+  }
+
+  const finalSeries = matchups.find((m) => m.round === rules.rounds.length)?.series
+  const finalSlot: Slot = finalSeries
+    ? { series: finalSeries }
+    : { placeholder: `${confs.join(' vs ')} champions` }
+  const byes: Record<string, { abbr: string; seed: number | null }[]> = {}
+  for (const conf of confs)
+    byes[conf] = Array.from({ length: rules.byes }, (_, i) => seedTeam(conf, i + 1)).filter((x): x is { abbr: string; seed: number } => !!x)
+
+  return { league, label: post.label, confs, playIn, byes, rounds, final: finalSlot, champion: finalSeries?.winner }
+}
+
+type SeedTeam = (conf: string, seed: number) => { abbr: string; seed: number } | undefined
+
+/** NBA: fixed tree. First round 1v8, 4v5, 3v6, 2v7; each later slot joins two neighbours. */
+function nbaSlots(round: number, series: Series[], conf: string, seedTeam: SeedTeam): Slot[] {
+  const first = PLAYOFF_RULES.nba.firstRound
+  const size = first.length >> round
+  const span = 1 << round
+  return Array.from({ length: size }, (_, i) => {
+    const pairs = first.slice(i * span, (i + 1) * span)
+    const covered = new Set(pairs.flat())
+    // Match on the series' top seed: a play-in team keeps its 7–10 standings seed, which can sit in another slot's range.
+    const topSeed = (x: Series) => Math.min(...x.teams.map((t) => t.seed ?? 99))
+    const s = series.find((x) => covered.has(topSeed(x))) ?? series.find((x) => x.teams.some((t) => t.seed !== null && covered.has(t.seed)))
+    if (s) return { series: s }
+    if (round === 0) {
+      const [high, low] = pairs[0]
+      const h = seedTeam(conf, high)
+      const l = low <= PLAYOFF_RULES.nba.seeds ? seedTeam(conf, low) : undefined
+      return {
+        known: [h, l].filter((x): x is { abbr: string; seed: number } => !!x),
+        placeholder: l ? undefined : `${high} vs ${low}th seed (play-in)`,
+      }
+    }
+    const half = (k: number) => pairs.slice(k * (span / 2), (k + 1) * (span / 2)).map((p) => p.join('/')).join(', ')
+    return { placeholder: `Winner of ${half(0)} vs winner of ${half(1)}` }
+  })
+}
+
+/** NFL: Wild Card 2v7, 3v6, 4v5; later rounds re-seed, so slots follow the highest seed left. */
+function nflSlots(round: number, series: Series[], conf: string, seedTeam: SeedTeam): Slot[] {
+  const top = (s: Series) => Math.min(...s.teams.map((t) => t.seed ?? 99))
+  if (round === 0) {
+    return PLAYOFF_RULES.nfl.firstRound.map(([high, low]) => {
+      const s = series.find((x) => x.teams.some((t) => t.seed === high || t.seed === low))
+      if (s) return { series: s }
+      return { known: [seedTeam(conf, high), seedTeam(conf, low)].filter((x): x is { abbr: string; seed: number } => !!x) }
+    })
+  }
+  const count = round === 1 ? 2 : 1
+  const sorted = [...series].sort((a, b) => top(a) - top(b))
+  const holders = round === 1 ? ['1 seed vs lowest seed left', 'Other two Wild Card winners'] : ['Divisional winners']
+  return Array.from({ length: count }, (_, i) => (sorted[i] ? { series: sorted[i] } : { placeholder: holders[i] }))
 }
