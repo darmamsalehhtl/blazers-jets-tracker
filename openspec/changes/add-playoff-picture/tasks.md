@@ -32,7 +32,7 @@
 
 ## 5. Spoilers
 
-- [ ] 5.1 Gate the seeding view and the bracket behind `useSpoilers()` with `SpoilerNote`, and list live postseason games with their score above the note. Verify in the browser: with spoilers off, no seed, record, GB, clinch mark or series score is visible on either league; turning spoilers on shows them right away. Commit ("Hide the playoff picture while spoilers are off").
+- [x] 5.1 Gate the seeding view and the bracket behind `useSpoilers()` with `SpoilerNote`, and list live postseason games with their score above the note. Verify in the browser: with spoilers off, no seed, record, GB, clinch mark or series score is visible on either league; turning spoilers on shows them right away. Commit ("Hide the playoff picture while spoilers are off").
 
 ## 6. Integration
 
