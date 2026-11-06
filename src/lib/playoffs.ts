@@ -322,6 +322,10 @@ export interface Bracket {
   confs: string[]
   /** NBA play-in games per conference */
   playIn: Record<string, Series[]>
+  /** NBA play-in matchups by seed (7 v 8, 9 v 10), for before they're played */
+  playInSlots: Record<string, Slot[]>
+  /** Drawn from today's seeds, not a real postseason */
+  projected?: boolean
   /** NFL first-round byes per conference */
   byes: Record<string, { abbr: string; seed: number | null }[]>
   rounds: BracketRound[]
@@ -461,7 +465,14 @@ export function buildBracket(league: League, post: PlayoffsLeague['postseason'],
   for (const conf of confs)
     byes[conf] = Array.from({ length: rules.byes }, (_, i) => seedTeam(conf, i + 1)).filter((x): x is { abbr: string; seed: number } => !!x)
 
-  return { league, label: post.label, confs, playIn, byes, rounds, final: finalSlot, champion: finalSeries?.winner }
+  const playInSlots: Record<string, Slot[]> = {}
+  if (rules.playIn)
+    for (const conf of confs)
+      playInSlots[conf] = [0, 2].map((k) => ({
+        known: [seedTeam(conf, rules.playIn![0] + k), seedTeam(conf, rules.playIn![0] + k + 1)].filter((x): x is { abbr: string; seed: number } => !!x),
+      }))
+
+  return { league, label: post.label, confs, playIn, playInSlots, byes, rounds, final: finalSlot, champion: finalSeries?.winner }
 }
 
 type SeedTeam = (conf: string, seed: number) => { abbr: string; seed: number } | undefined
@@ -484,7 +495,7 @@ function nbaSlots(round: number, series: Series[], conf: string, seedTeam: SeedT
       const l = low <= PLAYOFF_RULES.nba.seeds ? seedTeam(conf, low) : undefined
       return {
         known: [h, l].filter((x): x is { abbr: string; seed: number } => !!x),
-        placeholder: l ? undefined : `${high} vs ${low}th seed (play-in)`,
+        placeholder: l ? undefined : `${low}th seed (play-in)`,
       }
     }
     const half = (k: number) => pairs.slice(k * (span / 2), (k + 1) * (span / 2)).map((p) => p.join('/')).join(', ')
@@ -506,4 +517,14 @@ function nflSlots(round: number, series: Series[], conf: string, seedTeam: SeedT
   const sorted = [...series].sort((a, b) => top(a) - top(b))
   const holders = round === 1 ? ['1 seed vs lowest seed left', 'Other two Wild Card winners'] : ['Divisional winners']
   return Array.from({ length: count }, (_, i) => (sorted[i] ? { series: sorted[i] } : { placeholder: holders[i] }))
+}
+
+/** "If the season ended today": the bracket the current seeds would produce, with nothing played. */
+export function projectedBracket(league: League, confs: Conference[]): Bracket {
+  const seeds: PlayoffsLeague['postseason']['seeds'] = {}
+  for (const c of confs) {
+    const conf = c.abbr.length <= 4 ? c.abbr : c.name.replace(/ Conference$/, '')
+    for (const t of c.teams) seeds[t.entry.team.abbreviation] = { seed: t.seed < 90 ? t.seed : null, conf }
+  }
+  return { ...buildBracket(league, { season: 0, label: 'Projected', seeds, games: [] }, []), projected: true }
 }

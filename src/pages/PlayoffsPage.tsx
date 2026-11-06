@@ -5,7 +5,7 @@ import { OurStanding, Projection } from '../components/playoffs/Projection'
 import { Seeding } from '../components/playoffs/Seeding'
 import { Empty, ErrorBox, LiveBadge, Logo, SpoilerNote, Spinner, Tabs, Updated } from '../components/ui'
 import { scoreText, teamLogo, urls, type EspnEvent, type ScoreboardResponse } from '../lib/espn'
-import { buildBracket, conferences, mergeGames, phaseOf, type Phase, type PlayoffsData } from '../lib/playoffs'
+import { buildBracket, conferences, mergeGames, phaseOf, projectedBracket, type Phase, type PlayoffsData } from '../lib/playoffs'
 import { useDataFile } from '../lib/seasonData'
 import { useSpoilers } from '../lib/spoilers'
 import type { StandingsNode } from '../lib/standings'
@@ -61,7 +61,7 @@ function LeagueView({ team }: { team: TeamConfig }) {
 
   if (sb.error && !sb.data) return <ErrorBox error={sb.error} retry={sb.refresh} />
   if (!phase) return <Spinner label="Loading playoff picture" />
-  if (phase === 'seeding') return <SeedingView team={team} />
+  if (phase === 'seeding') return <RegularSeasonView team={team} />
   return <PostseasonView team={team} phase={phase} sb={sb.data} updatedAt={sb.updatedAt} />
 }
 
@@ -112,6 +112,40 @@ function PostseasonView({ team, phase, sb, updatedAt }: { team: TeamConfig; phas
           <Bracket bracket={bracket} team={team} />
         </>
       )}
+    </div>
+  )
+}
+
+/** Regular season: the bracket today's seeds would produce, or the full seeding. */
+function RegularSeasonView({ team }: { team: TeamConfig }) {
+  const [view, setView] = useState<'bracket' | 'seeding'>('bracket')
+  return (
+    <div className="space-y-3">
+      <Tabs
+        tabs={[
+          { id: 'bracket', label: 'Projected bracket' },
+          { id: 'seeding', label: 'Seeding' },
+        ]}
+        value={view}
+        onChange={setView}
+      />
+      {view === 'bracket' ? <ProjectedBracketView team={team} /> : <SeedingView team={team} />}
+    </div>
+  )
+}
+
+function ProjectedBracketView({ team }: { team: TeamConfig }) {
+  const standings = usePoll<StandingsNode>(urls.standings(team, undefined, 2), IDLE_MS)
+  const bracket = useMemo(() => (standings.data ? projectedBracket(team.league, conferences(standings.data)) : undefined), [standings.data, team.league])
+  const { show } = useSpoilers()
+
+  if (!show) return <SpoilerNote what="The projected bracket is" />
+  if (standings.error && !standings.data) return <ErrorBox error={standings.error} retry={standings.refresh} />
+  if (!bracket) return <Spinner label="Loading standings" />
+  return (
+    <div className="space-y-3">
+      <Updated at={standings.updatedAt} />
+      <Bracket bracket={bracket} team={team} />
     </div>
   )
 }

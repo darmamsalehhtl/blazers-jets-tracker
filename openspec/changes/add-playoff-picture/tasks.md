@@ -45,4 +45,4 @@
 
 ## 8. Projected bracket (review feedback)
 
-- [ ] 8.1 During the regular season, add a "Bracket" view (default) next to "Seeding" that draws the bracket tree from the live seeds: play-in games and first-round matchups filled in, later rounds as placeholders, labelled as a projection, hidden while spoilers are off. Verify at 390 and 1280 px for both leagues that the projected matchups match the seeding tables, and that the seeding view is unchanged. Commit ("Show a projected bracket during the season").
+- [x] 8.1 During the regular season, add a "Bracket" view (default) next to "Seeding" that draws the bracket tree from the live seeds: play-in games and first-round matchups filled in, later rounds as placeholders, labelled as a projection, hidden while spoilers are off. Verify at 390 and 1280 px for both leagues that the projected matchups match the seeding tables, and that the seeding view is unchanged. Commit ("Show a projected bracket during the season").

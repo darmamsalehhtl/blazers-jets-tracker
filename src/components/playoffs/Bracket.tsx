@@ -74,10 +74,15 @@ function playInColumns(b: BracketData, conf: string): Column[] {
   const games = b.playIn[conf] ?? []
   const label = (s: Series) => playInLabel(s.games[0]?.note ?? '')
   const pick = (want: string, fallback: number) => games.find((s) => label(s) === want) ?? games[fallback]
-  const cell = (s: Series | undefined, placeholder: string): Cell => ({ slot: s ? { series: s } : { placeholder }, round: 'Play-in' })
+  const cell = (s: Series | undefined, fallback: Slot): Cell => ({ slot: s ? { series: s } : fallback, round: 'Play-in' })
+  const [first, second] = b.playInSlots[conf] ?? []
   return [
-    { name: 'Play-in', short: 'Play-in', cells: [cell(pick('7 v 8', 1), '7 v 8'), cell(pick('9 v 10', 0), '9 v 10')] },
-    { name: 'For the 8th seed', short: '8th seed', cells: [cell(pick('For the 8th seed', 2), 'Loser of 7 v 8 vs winner of 9 v 10')] },
+    {
+      name: 'Play-in',
+      short: 'Play-in',
+      cells: [cell(pick('7 v 8', 1), first ?? { placeholder: '7 v 8' }), cell(pick('9 v 10', 0), second ?? { placeholder: '9 v 10' })],
+    },
+    { name: 'For the 8th seed', short: '8th seed', cells: [cell(pick('For the 8th seed', 2), { placeholder: 'Loser of 7 v 8 vs winner of 9 v 10' })] },
   ]
 }
 
@@ -182,6 +187,11 @@ export function Bracket({ bracket, team }: { bracket: BracketData; team: TeamCon
 
       {selected?.slot.series ? (
         <SeriesPanel cell={selected} league={bracket.league} team={team} />
+      ) : bracket.projected ? (
+        <p className="px-1 text-xs text-muted">
+          Projected from today's seeds; it changes with the standings.
+          {bracket.league === 'nba' ? ' Seeds 1 and 2 wait for the play-in winners.' : ''}
+        </p>
       ) : (
         <p className="px-1 text-xs text-muted">Tap a matchup for its games.</p>
       )}
@@ -255,11 +265,18 @@ function MatchCard({ cell, dir, league, team, selectedKey, onSelect }: CardProps
   const s = slot.series
   const base = 'relative flex h-[76px] w-full flex-col justify-center rounded-xl border bg-surface px-1.5 text-left sm:px-2'
   if (!s) {
+    const ours = slot.known?.some((t) => t.abbr === team.abbr)
     return (
-      <div className={`${base} border-dashed border-border`}>
-        {slot.known?.map((t) => <TeamRow key={t.abbr} league={league} abbr={t.abbr} seed={t.seed} ours={false} />)}
+      <div className={`${base} border-dashed border-border`} style={ours ? { boxShadow: `inset 3px 0 0 ${team.color}` } : undefined}>
+        {slot.known?.map((t) => <TeamRow key={t.abbr} league={league} abbr={t.abbr} seed={t.seed} ours={t.abbr === team.abbr} />)}
         {cell.bye ? (
           <p className="pl-7 text-[10px] text-muted">First-round bye</p>
+        ) : slot.placeholder && slot.known?.length ? (
+          // One side known: the other is still to be decided, shown as a grey team row.
+          <p className="flex h-8 items-center gap-1.5 text-[11px] text-muted">
+            <span className="h-6 w-6 shrink-0 rounded-full border border-dashed border-border" />
+            <span className="leading-tight">{slot.placeholder}</span>
+          </p>
         ) : (
           slot.placeholder && <p className="text-center text-[10px] leading-tight text-muted">{slot.placeholder}</p>
         )}
