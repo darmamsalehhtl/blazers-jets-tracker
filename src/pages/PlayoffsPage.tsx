@@ -1,10 +1,14 @@
+import { useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { ErrorBox, Spinner } from '../components/ui'
+import { Seeding } from '../components/playoffs/Seeding'
+import { ErrorBox, Spinner, Updated } from '../components/ui'
 import { urls, type ScoreboardResponse } from '../lib/espn'
-import { phaseOf } from '../lib/playoffs'
+import { conferences, phaseOf, type PlayoffsData } from '../lib/playoffs'
+import { useDataFile } from '../lib/seasonData'
+import type { StandingsNode } from '../lib/standings'
 import { TEAMS, type TeamConfig } from '../lib/teams'
 import { leagueInterval } from '../lib/useAllGames'
-import { usePoll } from '../lib/usePoll'
+import { IDLE_MS, usePoll } from '../lib/usePoll'
 
 const LEAGUES = [
   { id: 'nfl', label: 'NFL', team: TEAMS.nyj },
@@ -50,5 +54,20 @@ function LeagueView({ team }: { team: TeamConfig }) {
 
   if (sb.error && !sb.data) return <ErrorBox error={sb.error} retry={sb.refresh} />
   if (!phase) return <Spinner label="Loading playoff picture" />
-  return <p className="text-sm text-muted">Phase: {phase}</p>
+  return <SeedingView team={team} />
+}
+
+function SeedingView({ team }: { team: TeamConfig }) {
+  const standings = usePoll<StandingsNode>(urls.standings(team, undefined, 2), IDLE_MS)
+  const { data } = useDataFile<PlayoffsData>('playoffs')
+  const confs = useMemo(() => (standings.data ? conferences(standings.data) : undefined), [standings.data])
+
+  if (standings.error && !standings.data) return <ErrorBox error={standings.error} retry={standings.refresh} />
+  if (!confs) return <Spinner label="Loading standings" />
+  return (
+    <div className="space-y-3">
+      <Updated at={standings.updatedAt} />
+      <Seeding league={team.league} confs={confs} data={data?.[team.league]} team={team} />
+    </div>
+  )
 }
