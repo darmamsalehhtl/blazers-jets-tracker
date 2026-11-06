@@ -22,7 +22,7 @@
 
 - [x] 3.1 Build `src/components/playoffs/Seeding.tsx`: per conference, rows by seed with logo, abbreviation, record, PCT, GB/lead, games left, remaining SOS and clinch mark. Add cut lines after the last playoff seed (and after seed 10 in the NBA), division-leader and bye marks for the NFL, and a legend. Seed/team/record/GB stay fixed and the other columns scroll inside the table on phones. Verify in the browser against ESPN's standings for both leagues, at 390 px and on a laptop, in light and dark mode. Commit ("Show playoff seeding per conference").
 - [x] 3.2 Add the projected matchups per conference (NFL bye plus 3 Wild Card games; NBA 2 play-in games plus 4 series with TBD opponents) and highlight the Jets/Blazers rows with the one-line summary above the conferences. Verify that the summary's seed and GB match the table for both teams. Commit ("Show projected matchups and where our teams stand").
-- [ ] 3.3 Handle loading, errors (with retry) and a missing `playoffs.json` (dashes for games left and SOS), and show an `Updated` time. Verify by blocking the data file and the standings URL in DevTools. Commit ("Handle missing playoff data").
+- [x] 3.3 Handle loading, errors (with retry) and a missing `playoffs.json` (dashes for games left and SOS), and show an `Updated` time. Verify by blocking the data file and the standings URL in DevTools. Commit ("Handle missing playoff data").
 
 ## 4. Bracket view
 

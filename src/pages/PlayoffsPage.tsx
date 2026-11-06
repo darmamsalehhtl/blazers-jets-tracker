@@ -60,7 +60,8 @@ function LeagueView({ team }: { team: TeamConfig }) {
 
 function SeedingView({ team }: { team: TeamConfig }) {
   const standings = usePoll<StandingsNode>(urls.standings(team, undefined, 2), IDLE_MS)
-  const { data } = useDataFile<PlayoffsData>('playoffs')
+  const { data, error } = useDataFile<PlayoffsData>('playoffs')
+  const remaining = data?.[team.league]
   const confs = useMemo(() => (standings.data ? conferences(standings.data) : undefined), [standings.data])
 
   if (standings.error && !standings.data) return <ErrorBox error={standings.error} retry={standings.refresh} />
@@ -70,7 +71,10 @@ function SeedingView({ team }: { team: TeamConfig }) {
       <OurStanding league={team.league} confs={confs} team={team} />
       <Projection league={team.league} confs={confs} team={team} />
       <Updated at={standings.updatedAt} />
-      <Seeding league={team.league} confs={confs} data={data?.[team.league]} team={team} />
+      {(error || remaining?.available === false) && (
+        <p className="px-1 text-xs text-muted">Remaining schedules aren't available right now, so games left and SOS are missing.</p>
+      )}
+      <Seeding league={team.league} confs={confs} data={remaining} team={team} />
     </div>
   )
 }
