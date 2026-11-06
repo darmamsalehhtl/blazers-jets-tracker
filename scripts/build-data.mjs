@@ -24,6 +24,10 @@
 //              for next draft and every team's need per position group (unit
 //              EPA, starter age/depth, recent early picks; weights: NEED_WEIGHTS).
 //              The picks themselves are made in the browser on the live order.
+//   playoffs.json – inputs for the Playoffs tab, per league: every team's remaining
+//              regular-season opponents (for games left and strength of schedule)
+//              and the current or most recent postseason's games with final seeds.
+//              Seeding itself comes live from ESPN standings in the browser.
 //
 // Each part fails independently: if a source is down, that file records the
 // error and the app shows a notice instead of breaking the build.
@@ -64,6 +68,7 @@ async function main() {
     draft: buildDraft,
     'nba-games': buildNbaGames,
     'mock-draft': () => buildMockDraft(once().then((j) => j.leagueInput.teamUnits)),
+    playoffs: buildPlayoffs,
   }
   const names = Object.keys(builders).filter((n) => !only || only.includes(n))
   const results = await Promise.allSettled(names.map((n) => builders[n]()))
@@ -1263,7 +1268,15 @@ function nflSchedule() {
     const ab = (a) => NFLVERSE_ABBR[a] ?? a
     await streamCsv('https://github.com/nflverse/nfldata/raw/master/data/games.csv', (r) => {
       if (Number(r.season) !== NFL_SEASON || r.game_type !== 'REG') return
-      games.push({ week: num(r.week), away: ab(r.away_team), home: ab(r.home_team), awayScore: num(r.away_score), homeScore: num(r.home_score) })
+      games.push({
+        week: num(r.week),
+        away: ab(r.away_team),
+        home: ab(r.home_team),
+        awayScore: num(r.away_score),
+        homeScore: num(r.home_score),
+        // nflverse lists kickoff in US Eastern; the offset is close enough for "has it been played".
+        date: r.gameday && r.gametime ? `${r.gameday}T${r.gametime}:00-05:00` : r.gameday,
+      })
     })
     return games
   })()
@@ -1391,6 +1404,108 @@ function nbaGameMap(feed) {
   if (!count) throw new Error('NBA schedule feed: no games')
   if (unknown.size) console.log(`nba-games: skipped games with non-NBA tricodes ${[...unknown].join(', ')}`)
   return { available: true, season: ls.seasonYear, count, games }
+}
+
+// ------------------------------------------------------------------ Playoff picture inputs
+
+const ESPN_SITE = 'https://site.api.espn.com/apis/site/v2/sports'
+const ESPN_CORE = 'https://sports.core.api.espn.com/v2/sports'
+
+async function buildPlayoffs() {
+  const [nfl, nba] = await Promise.allSettled([playoffsNfl(), playoffsNba()])
+  const part = (r) => (r.status === 'fulfilled' ? { available: true, ...r.value } : { available: false, error: String(r.reason?.message ?? r.reason) })
+  return { available: true, nfl: part(nfl), nba: part(nba) }
+}
+
+async function playoffsNfl() {
+  // Remaining regular-season games: nflverse schedule rows without a score.
+  const remaining = {}
+  for (const g of await nflSchedule()) {
+    if (g.awayScore !== null && g.homeScore !== null) continue
+    ;(remaining[g.away] ??= []).push({ opp: g.home, date: g.date })
+    ;(remaining[g.home] ??= []).push({ opp: g.away, date: g.date })
+  }
+  // Postseason: this season's once a matchup is set, otherwise the last one.
+  // Week 4 is the Pro Bowl; undetermined games come back as "TBD" teams.
+  const weeks = async (season) => {
+    const rounds = await Promise.all([1, 2, 3, 5].map((w) => getJSON(`${ESPN_SITE}/football/nfl/scoreboard?seasontype=3&week=${w}&dates=${season}`)))
+    return rounds.flatMap((r) => r.events ?? []).map(postseasonGame).filter((g) => g.teams.every((t) => t.abbr && t.abbr !== 'TBD'))
+  }
+  let season = NFL_SEASON
+  let games = await weeks(season)
+  if (!games.length) games = await weeks(--season)
+  const seeds = await finalSeeds('football', 'nfl', season)
+  return { season: NFL_SEASON, remaining, postseason: { season, label: String(season), seeds, games } }
+}
+
+async function playoffsNba() {
+  const teams = (await getJSON(`${ESPN_SITE}/basketball/nba/teams`)).sports?.[0]?.leagues?.[0]?.teams?.map((x) => x.team) ?? []
+  if (teams.length !== 30) throw new Error(`expected 30 NBA teams, got ${teams.length}`)
+  const scheds = await pool(teams, 8, (t) => getJSON(`${ESPN_SITE}/basketball/nba/teams/${t.id}/schedule`))
+  const remaining = {}
+  let season
+  for (const [i, s] of scheds.entries()) {
+    season ??= s.season?.year
+    remaining[teams[i].abbreviation] = (s.events ?? [])
+      .filter((e) => e.competitions?.[0]?.status?.type?.state === 'pre')
+      .map((e) => ({ opp: e.competitions[0].competitors.find((c) => c.team.id !== teams[i].id)?.team.abbreviation, date: e.date }))
+      .filter((g) => g.opp)
+  }
+  if (!season) throw new Error('NBA schedules without a season')
+
+  // Postseason: this season's once the play-in has started, otherwise the last one.
+  const window = async (year) => {
+    const types = await Promise.all([5, 3].map((t) => getJSON(`${ESPN_CORE}/basketball/leagues/nba/seasons/${year}/types/${t}`)))
+    return { start: types[0].startDate, end: types[1].endDate }
+  }
+  let year = season
+  let w = await window(year)
+  if (new Date(w.start) > now) w = await window(--year)
+  const days = (await getJSON(`${ESPN_SITE}/basketball/nba/scoreboard?dates=${year}`)).leagues?.[0]?.calendar ?? []
+  const inWindow = days.filter((d) => d >= w.start && d < w.end && new Date(d) <= now)
+  const boards = await pool(inWindow, 6, (d) => getJSON(`${ESPN_SITE}/basketball/nba/scoreboard?dates=${easternDate(d).replaceAll('-', '')}`))
+  const games = boards
+    .flatMap((b) => b.events ?? [])
+    .filter((e) => e.season?.type === 3 || e.season?.type === 5)
+    .map(postseasonGame)
+  const seeds = await finalSeeds('basketball', 'nba', year)
+  return { season, remaining, postseason: { season: year, label: `${year - 1}-${String(year).slice(2)}`, seeds, games } }
+}
+
+/** Seed and conference of every team in the final standings of `season`. */
+async function finalSeeds(sport, league, season) {
+  const d = await getJSON(`https://site.api.espn.com/apis/v2/sports/${sport}/${league}/standings?level=2&season=${season}`)
+  const out = {}
+  for (const c of d.children ?? []) {
+    for (const e of c.standings?.entries ?? []) {
+      const seed = e.stats?.find((s) => s.type === 'playoffseed')?.value
+      out[e.team.abbreviation] = { seed: seed ?? null, conf: c.abbreviation ?? c.name }
+    }
+  }
+  return out
+}
+
+/** The parts of a scoreboard event the bracket needs. */
+function postseasonGame(e) {
+  const c = e.competitions?.[0] ?? {}
+  const series = c.series?.type === 'playoff' ? c.series : undefined
+  return {
+    id: e.id,
+    date: e.date,
+    seasonType: e.season?.type,
+    note: c.notes?.[0]?.headline ?? '',
+    state: c.status?.type?.state,
+    detail: c.status?.type?.shortDetail,
+    teams: (c.competitors ?? []).map((t) => ({
+      id: t.team?.id,
+      abbr: t.team?.abbreviation,
+      home: t.homeAway === 'home',
+      score: t.score === undefined || t.score === '' ? null : Number(t.score),
+      winner: t.winner ?? false,
+      seriesWins: series?.competitors?.find((s) => s.id === t.team?.id)?.wins ?? null,
+    })),
+    series: series ? { summary: series.summary, completed: series.completed, total: series.totalCompetitions } : undefined,
+  }
 }
 
 // ------------------------------------------------------------------ NFL mock draft inputs

@@ -3,7 +3,7 @@
 ## 1. Data
 
 - [x] 1.1 Add `src/lib/playoffs.ts` with `PLAYOFF_RULES` for the NFL and NBA (seeds, play-in, byes, division leaders, first-round pairings, round names), the clincher-code label table, and helpers: sort a conference by `playoffseed`, games back between two entries (ties as half), tier of a seed (in / play-in / out), and projected first-round matchups. Verify with a scratch esbuild script: 5-6 vs 7-4 gives 2 GB, 20-10 vs 17-13 gives a 3-game lead, NFL pairings are 2v7/3v6/4v5 with a 1-seed bye, NBA seed 9 is play-in. `npm run build` passes. Commit ("Add playoff rules and seeding helpers").
-- [ ] 1.2 Add `buildPlayoffs` to `scripts/build-data.mjs` (design Decision 3), registered as `playoffs`:
+- [x] 1.2 Add `buildPlayoffs` to `scripts/build-data.mjs` (design Decision 3), registered as `playoffs`:
   - NFL `remaining` from the nflverse schedule
   - NBA `remaining` from the 30 ESPN team schedules
   - NFL `postseason` from scoreboard weeks 1–5 of `seasontype=3`
