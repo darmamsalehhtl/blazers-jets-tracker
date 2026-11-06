@@ -13,7 +13,7 @@ export interface LeagueGame {
 const RANK = { in: 0, pre: 1, post: 2 }
 
 /** Live fast when anything is live, every minute when a game starts soon, else slowly. */
-function leagueInterval(d: ScoreboardResponse | undefined) {
+export function leagueInterval(d: ScoreboardResponse | undefined) {
   const states = (d?.events ?? []).map((e) => e.competitions[0])
   if (states.some((c) => c.status.type.state === 'in')) return LIVE_MS
   if (states.some((c) => c.status.type.state === 'pre' && isWithinHours(c.date, 12))) return 60_000

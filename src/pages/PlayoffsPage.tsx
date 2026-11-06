@@ -1,5 +1,10 @@
 import { useSearchParams } from 'react-router-dom'
-import { TEAMS } from '../lib/teams'
+import { ErrorBox, Spinner } from '../components/ui'
+import { urls, type ScoreboardResponse } from '../lib/espn'
+import { phaseOf } from '../lib/playoffs'
+import { TEAMS, type TeamConfig } from '../lib/teams'
+import { leagueInterval } from '../lib/useAllGames'
+import { usePoll } from '../lib/usePoll'
 
 const LEAGUES = [
   { id: 'nfl', label: 'NFL', team: TEAMS.nyj },
@@ -32,6 +37,18 @@ export default function PlayoffsPage() {
           </button>
         ))}
       </div>
+
+      <LeagueView key={league.id} team={league.team} />
     </div>
   )
+}
+
+function LeagueView({ team }: { team: TeamConfig }) {
+  // The league's current scoreboard: its season type sets the phase, its events feed live bracket games.
+  const sb = usePoll<ScoreboardResponse>(urls.scoreboard(team), leagueInterval)
+  const phase = phaseOf(sb.data?.leagues?.[0]?.season?.type?.type)
+
+  if (sb.error && !sb.data) return <ErrorBox error={sb.error} retry={sb.refresh} />
+  if (!phase) return <Spinner label="Loading playoff picture" />
+  return <p className="text-sm text-muted">Phase: {phase}</p>
 }

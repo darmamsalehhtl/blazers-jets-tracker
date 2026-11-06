@@ -123,11 +123,14 @@ export interface EspnEvent {
   shortName: string
   week?: { number: number; text?: string }
   seasonType?: { type: number; name: string; abbreviation?: string }
+  /** On scoreboard events: 1 pre, 2 regular, 3 post, 5 NBA play-in */
+  season?: { year: number; type: number }
   competitions: Competition[]
 }
 
 export interface ScoreboardResponse {
   events: EspnEvent[]
+  leagues?: { season?: { year: number; displayName?: string; type?: { type: number; name?: string } } }[]
 }
 
 export interface ScheduleResponse {

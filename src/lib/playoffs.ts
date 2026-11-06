@@ -262,3 +262,16 @@ export function winPcts(confs: Conference[]): Record<string, number> {
     }
   return out
 }
+
+// ---------- Season phase ----------
+
+/** seeding = regular season; bracket = play-in or playoffs running; offseason = show the last bracket. */
+export type Phase = 'seeding' | 'bracket' | 'offseason'
+
+/** Phase from the current scoreboard's season type (ESPN: 1 pre, 2 regular, 3 post, 4 off, 5 play-in). */
+export function phaseOf(seasonType: number | undefined): Phase | undefined {
+  if (seasonType === undefined) return undefined
+  if (seasonType === 2) return 'seeding'
+  if (seasonType === 3 || seasonType === 5) return 'bracket'
+  return 'offseason'
+}
