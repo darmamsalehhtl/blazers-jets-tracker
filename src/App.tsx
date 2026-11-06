@@ -8,6 +8,7 @@ import Home from './pages/Home'
 import LivePage from './pages/LivePage'
 import MvpPage from './pages/MvpPage'
 import PlayerPage from './pages/PlayerPage'
+import PlayoffsPage from './pages/PlayoffsPage'
 import TeamPage from './pages/TeamPage'
 
 // Hash routing so deep links work on GitHub Pages without server rewrites.
@@ -20,6 +21,7 @@ export default function App() {
           <Route path="live" element={<LivePage />} />
           <Route path="calendar" element={<CalendarPage />} />
           <Route path="draft" element={<DraftPage />} />
+          <Route path="playoffs" element={<PlayoffsPage />} />
           <Route path="mvp" element={<MvpPage />} />
           <Route path="team/:team" element={<Keyed by="team" page={TeamPage} />} />
           <Route path="game/:team/:eventId" element={<GamePage />} />

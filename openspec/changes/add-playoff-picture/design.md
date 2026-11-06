@@ -50,7 +50,7 @@ With spoilers off the seeding view and the bracket are replaced by `SpoilerNote`
 *Alternative*: per-game `canShow` in the bracket. Rejected: the matchups of later rounds reveal earlier winners anyway.
 
 ### 7. Navigation
-Add a `Playoffs` `NavLink` between Draft and MVP. To fit 390 px, the Draft link becomes icon-only below `sm` like Calendar (a new `DraftIcon`), keeping `aria-label`/`title`. Verify the header at 375 and 390 px.
+Add a `Playoffs` `NavLink` between Draft and MVP. On phones, Draft and Playoffs become icons like Calendar (`DraftIcon`, `TrophyIcon`, keeping `aria-label`/`title`), and the 2 px gap between header items goes away. Measured: making only Draft icon-only still overflowed by 28–49 px at 360–390 px. The header switches to text labels at `md` (768 px) instead of `sm`, because at 640–767 px the full header overflowed (by 19 px even before this change). Checked from 360 to 1024 px with no overflow.
 
 ## Risks / Trade-offs
 

@@ -15,7 +15,7 @@
 
 ## 2. Page and navigation
 
-- [ ] 2.1 Add the `playoffs` route in `src/App.tsx` and a stub `src/pages/PlayoffsPage.tsx` with the NFL/NBA switch in `?league=` (same as the MVP page). Add a Playoffs `NavLink` in `src/components/Layout.tsx` between Draft and MVP, and make Draft icon-only below `sm` with `aria-label`/`title`. In the browser at 360, 375 and 390 px, check that the header does not overflow and every tab is visible. Commit ("Add Playoffs tab").
+- [x] 2.1 Add the `playoffs` route in `src/App.tsx` and a stub `src/pages/PlayoffsPage.tsx` with the NFL/NBA switch in `?league=` (same as the MVP page). Add a Playoffs `NavLink` in `src/components/Layout.tsx` between Draft and MVP, and make Draft icon-only below `sm` with `aria-label`/`title`. In the browser at 360, 375 and 390 px, check that the header does not overflow and every tab is visible. Commit ("Add Playoffs tab").
 - [ ] 2.2 Decide the phase from the current scoreboard's `season.type` (design Decision 4). Verify in the browser: NFL shows the seeding placeholder now; the NBA phase is right for the current date. Commit ("Pick seeding or bracket by season phase").
 
 ## 3. Seeding view

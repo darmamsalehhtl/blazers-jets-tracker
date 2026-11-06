@@ -20,10 +20,10 @@ function Shell() {
   return (
     <div className="mx-auto min-h-dvh max-w-5xl">
       <header className="sticky top-0 z-20 border-b border-border bg-bg/85 backdrop-blur-md" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-        <div className="flex h-14 items-center gap-0.5 px-2 sm:gap-2 sm:px-4">
+        <div className="flex h-14 items-center px-2 md:gap-2 md:px-4">
           <Link to="/" className="mr-auto flex shrink-0 items-center gap-2 font-semibold tracking-tight">
             <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="h-7 w-7" />
-            <span className="hidden sm:inline">Tracker</span>
+            <span className="hidden md:inline">Tracker</span>
           </Link>
           <NavLink to="/live" className={navClass}>
             <span className="h-2 w-2 rounded-full bg-live" />
@@ -31,28 +31,33 @@ function Shell() {
           </NavLink>
           {TEAM_ORDER.map((k) => (
             <NavLink key={k} to={`/team/${k}`} className={navClass}>
-              {/* Logos only where there's room: five tabs have to fit on a phone. */}
-              <img src={TEAMS[k].logo} alt="" className="hidden h-5 w-5 object-contain sm:block" />
+              {/* Logos only where there's room: every tab has to fit on a phone. */}
+              <img src={TEAMS[k].logo} alt="" className="hidden h-5 w-5 object-contain md:block" />
               {TEAMS[k].nickname}
             </NavLink>
           ))}
-          <NavLink to="/draft" className={navClass}>
-            Draft
+          {/* Draft, Playoffs and Calendar are icons on phones: the header is full there. */}
+          <NavLink to="/draft" aria-label="Draft" title="Draft" className={navClass}>
+            <DraftIcon />
+            <span className="hidden md:inline">Draft</span>
+          </NavLink>
+          <NavLink to="/playoffs" aria-label="Playoffs" title="Playoffs" className={navClass}>
+            <TrophyIcon />
+            <span className="hidden md:inline">Playoffs</span>
           </NavLink>
           <NavLink to="/mvp" className={navClass}>
             MVP
           </NavLink>
-          {/* Icon only on phones: the header is full there. */}
           <NavLink to="/calendar" aria-label="Calendar" title="Calendar" className={navClass}>
             <CalendarIcon />
-            <span className="hidden sm:inline">Calendar</span>
+            <span className="hidden md:inline">Calendar</span>
           </NavLink>
           <button
             onClick={spoilers.toggle}
             aria-pressed={spoilers.show}
             aria-label={spoilers.show ? 'Hide spoilers' : 'Show spoilers'}
             title={spoilers.show ? 'Spoilers on: scores shown' : 'Spoilers off: final scores hidden'}
-            className={`flex h-9 w-7 shrink-0 min-[380px]:w-8 sm:w-9 items-center justify-center rounded-lg hover:bg-surface-2 hover:text-text sm:ml-1 ${
+            className={`flex h-9 w-7 shrink-0 min-[380px]:w-8 md:w-9 items-center justify-center rounded-lg hover:bg-surface-2 hover:text-text md:ml-1 ${
               spoilers.show ? 'text-text' : 'text-muted'
             }`}
           >
@@ -61,7 +66,7 @@ function Shell() {
           <button
             onClick={toggle}
             aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-            className="flex h-9 w-7 shrink-0 min-[380px]:w-8 sm:w-9 items-center justify-center rounded-lg text-muted hover:bg-surface-2 hover:text-text"
+            className="flex h-9 w-7 shrink-0 min-[380px]:w-8 md:w-9 items-center justify-center rounded-lg text-muted hover:bg-surface-2 hover:text-text"
           >
             {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
           </button>
@@ -77,15 +82,32 @@ function Shell() {
 }
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
-  `flex shrink-0 items-center gap-1.5 rounded-lg px-1 py-1.5 text-sm font-medium min-[380px]:px-1.5 sm:px-2.5 ${
+  `flex shrink-0 items-center gap-1.5 rounded-lg px-1 py-1.5 text-sm font-medium min-[380px]:px-1.5 md:px-2.5 ${
     isActive ? 'bg-surface-2 text-text' : 'text-muted hover:text-text'
   }`
 
 function CalendarIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="sm:hidden">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="md:hidden">
       <rect x="3" y="5" width="18" height="16" rx="2" />
       <path d="M16 3v4M8 3v4M3 10h18" />
+    </svg>
+  )
+}
+
+function DraftIcon() {
+  // A numbered list: the draft order.
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="md:hidden">
+      <path d="M10 6h11M10 12h11M10 18h11M4 6h1v4M4 10h2M6 18H4c0-1 2-2 2-3s-1-1.5-2-1" />
+    </svg>
+  )
+}
+
+function TrophyIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="md:hidden">
+      <path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4zM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3" />
     </svg>
   )
 }
