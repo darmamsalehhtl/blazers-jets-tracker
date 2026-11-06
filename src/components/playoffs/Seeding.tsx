@@ -154,7 +154,6 @@ function Row({
   const ours = t.entry.team.id === team.id
   const rs = races(league, conf, t)
   const rem = data?.available ? remainingFor(data.remaining[abbr], winPct) : null
-  const bye = t.seed <= PLAYOFF_RULES[league].byes
   // Sticky cells need an opaque background, so the highlight is drawn on each cell.
   const bg = ours ? (league === 'nfl' ? 'bg-[color-mix(in_srgb,var(--nyj)_12%,var(--surface))]' : 'bg-[color-mix(in_srgb,var(--por)_12%,var(--surface))]') : 'bg-surface'
   const pct = t.wins + t.losses + t.ties ? (t.wins + t.ties / 2) / (t.wins + t.losses + t.ties) : 0
@@ -174,7 +173,6 @@ function Row({
               {t.clincher}
             </span>
           )}
-          {bye && <span className="rounded bg-surface-2 px-1 text-[10px] font-medium text-muted">Bye</span>}
         </span>
       </td>
       <td className={`px-1.5 py-1.5 md:px-2 text-right whitespace-nowrap ${bg}`}>

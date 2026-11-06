@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { OurStanding, Projection } from '../components/playoffs/Projection'
 import { Seeding } from '../components/playoffs/Seeding'
 import { ErrorBox, Spinner, Updated } from '../components/ui'
 import { urls, type ScoreboardResponse } from '../lib/espn'
@@ -66,6 +67,8 @@ function SeedingView({ team }: { team: TeamConfig }) {
   if (!confs) return <Spinner label="Loading standings" />
   return (
     <div className="space-y-3">
+      <OurStanding league={team.league} confs={confs} team={team} />
+      <Projection league={team.league} confs={confs} team={team} />
       <Updated at={standings.updatedAt} />
       <Seeding league={team.league} confs={confs} data={data?.[team.league]} team={team} />
     </div>
