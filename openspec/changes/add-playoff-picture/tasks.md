@@ -36,4 +36,4 @@
 
 ## 6. Integration
 
-- [ ] 6.1 Run `npm run lint` and `npm run build`. Click through Home → Playoffs → NBA → a Blazers bracket game and back at 390 px and on a laptop, light and dark, spoilers on and off. Check that the other tabs (Live, Draft, MVP, Calendar) behave as before. Push to `main` and check the deployed page after CI builds `playoffs.json`.
+- [x] 6.1 Run `npm run lint` and `npm run build`. Click through Home → Playoffs → NBA → a Blazers bracket game and back at 390 px and on a laptop, light and dark, spoilers on and off. Check that the other tabs (Live, Draft, MVP, Calendar) behave as before. Push to `main` and check the deployed page after CI builds `playoffs.json`.
