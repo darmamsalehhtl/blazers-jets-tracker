@@ -131,6 +131,19 @@ export function Bracket({ bracket, team }: { bracket: BracketData; team: TeamCon
           <Connector n={1} height={height} mirrored />
           <Tree cols={columnsFor(bracket, right)} dir="rtl" height={height} conf={right} {...props} />
         </div>
+        {bracket.league === 'nba' && (
+          <div className="mt-4 border-t border-border/60 pt-3">
+            <p className="mb-2 text-center text-[11px] font-semibold tracking-wide text-muted uppercase">Play-in tournament</p>
+            <div className="flex justify-center gap-[13%]">
+              {[left, right].map((c, i) => (
+                <div key={c} className="w-[27%]">
+                  <p className="text-center text-[10px] font-semibold text-muted uppercase">{c}</p>
+                  <Tree cols={playInColumns(bracket, c)} dir={i ? 'rtl' : 'ltr'} height={ROW * 2} conf={`${c} play-in`} className="flex-1" {...props} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Phones and tablets: one conference half at a time, then the final. */}
@@ -157,6 +170,14 @@ export function Bracket({ bracket, team }: { bracket: BracketData; team: TeamCon
             <MatchCard cell={final} dir="ltr" {...props} />
           </div>
         </div>
+        {bracket.league === 'nba' && (
+          <div className="rounded-2xl border border-border bg-surface px-2 pt-3 pb-4">
+            <p className="mb-1 text-center text-[11px] font-semibold tracking-wide text-muted uppercase">{conf} play-in</p>
+            <div className="mx-auto max-w-[300px]">
+              <Tree cols={playInColumns(bracket, conf)} dir="ltr" height={ROW * 2} conf={`${conf} play-in`} className="flex-1" short {...props} />
+            </div>
+          </div>
+        )}
       </section>
 
       {selected?.slot.series ? (
@@ -179,7 +200,15 @@ function Title({ text }: { text: string }) {
   return <p className="flex h-8 items-start justify-center px-1 text-center text-[10px] leading-tight font-semibold tracking-wide text-muted uppercase">{text}</p>
 }
 
-function Tree({ cols, dir, height, conf, short, ...props }: CardProps & { cols: Column[]; dir: Dir; height: number; conf: string; short?: boolean }) {
+function Tree({
+  cols,
+  dir,
+  height,
+  conf,
+  short,
+  className = 'flex-[3]',
+  ...props
+}: CardProps & { cols: Column[]; dir: Dir; height: number; conf: string; short?: boolean; className?: string }) {
   const parts = cols.flatMap((col, i) => {
     const column = (
       <div key={col.name} className="min-w-0 flex-1">
@@ -194,7 +223,7 @@ function Tree({ cols, dir, height, conf, short, ...props }: CardProps & { cols: 
     return i < cols.length - 1 ? [column, <Connector key={`c${i}`} n={col.cells.length} height={height} mirrored={dir === 'rtl'} />] : [column]
   })
   return (
-    <div className={`flex min-w-0 flex-[3] ${dir === 'rtl' ? 'flex-row-reverse' : ''}`} aria-label={`${conf} bracket`}>
+    <div className={`flex min-w-0 ${className} ${dir === 'rtl' ? 'flex-row-reverse' : ''}`} aria-label={`${conf} bracket`}>
       {parts}
     </div>
   )
@@ -255,7 +284,7 @@ function MatchCard({ cell, dir, league, team, selectedKey, onSelect }: CardProps
       style={ours ? { boxShadow: `inset 3px 0 0 ${team.color}` } : undefined}
     >
       {s.live && (
-        <span className="absolute -top-2 right-1.5 scale-90">
+        <span className="absolute -top-3 right-1 scale-90">
           <LiveBadge />
         </span>
       )}
