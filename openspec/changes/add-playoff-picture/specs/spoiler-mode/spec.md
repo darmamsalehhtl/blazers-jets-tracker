@@ -9,7 +9,7 @@ While spoilers are off, the app SHALL hide all of the following:
 - per-game result lists and per-game charts (results list, points by game, net rating by game)
 - players' game-by-game logs and "last 5 games"
 - team news headlines
-- the Playoffs page: the seeding view (seeds, records, games back, clinch marks, projected matchups, our-team summary) and the bracket (results, series scores, and matchups decided by finished games); games in progress on the bracket are still shown with their live score
+- the Playoffs page: the seeding view (seeds, records, games back, clinch marks, projected matchups, our-team summary), the projected bracket, and the bracket (results, series scores, and matchups decided by finished games); games in progress on the bracket are still shown with their live score
 
 Each hidden section SHALL be replaced by a short note that it is hidden while spoilers are off, with a control that turns spoilers on.
 

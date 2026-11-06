@@ -42,3 +42,7 @@
 
 - [x] 7.1 Redraw `src/components/playoffs/Bracket.tsx` as a real bracket tree (design Decision 5, revised): mirrored halves with the final in the middle from `lg` up, round titles, SVG connectors, compact matchup cards with seeds under the abbreviations and a winner marker, the NFL bye card in the Wild Card column, and a games panel under the tree for the selected matchup (a live series selected by default). Verify against the 2025-26 NBA and 2025 NFL brackets at 1280 px in light and dark mode: every card's centre lines up with its connector. Commit ("Draw the playoffs as a bracket tree").
 - [x] 7.2 Draw the NBA play-in as a tree per conference (7 v 8 and 9 v 10 into the 8th-seed game) under the main bracket, and below `lg` show one conference half at a time with a West/East switch and the final below. Verify at 390 and 768 px that there's no horizontal page scroll, and that the live test (Task 4.3 setup) still shows the live score. Commit ("Show the play-in tree and a one-conference bracket on phones").
+
+## 8. Projected bracket (review feedback)
+
+- [ ] 8.1 During the regular season, add a "Bracket" view (default) next to "Seeding" that draws the bracket tree from the live seeds: play-in games and first-round matchups filled in, later rounds as placeholders, labelled as a projection, hidden while spoilers are off. Verify at 390 and 1280 px for both leagues that the projected matchups match the seeding tables, and that the seeding view is unchanged. Commit ("Show a projected bracket during the season").

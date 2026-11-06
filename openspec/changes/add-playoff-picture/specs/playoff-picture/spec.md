@@ -36,6 +36,21 @@ For each league the page SHALL show the seeding view while the regular season is
 - **WHEN** the NBA season is over and the next regular season has not started
 - **THEN** the NBA view shows the last postseason's completed bracket, labeled with that season (for example "2025-26")
 
+### Requirement: Projected bracket during the regular season
+While the regular season is in progress, the page SHALL also offer a bracket view built from the current seeds, in the same layout as the postseason bracket and opened by default: the NBA play-in games (7 v 8, 9 v 10), the first-round matchups (NBA seeds 1 and 2 against the play-in winners, NFL seed 1 on a bye), and placeholders for every later round and the final. It SHALL be labelled as a projection, show no scores, and update with the standings. The seeding view SHALL stay one tap away.
+
+#### Scenario: NBA projected bracket
+- **WHEN** the NBA regular season is in progress and the user opens the NBA view
+- **THEN** a bracket shows the current 7 v 8 and 9 v 10 play-in games, the first round with 3 v 6 and 4 v 5 filled in and seeds 1 and 2 waiting for the play-in, and placeholders for later rounds
+
+#### Scenario: NFL projected bracket
+- **WHEN** the NFL regular season is in progress
+- **THEN** the bracket shows each conference's 1 seed on a bye and the three Wild Card games from the current seeds
+
+#### Scenario: Back to the seeding
+- **WHEN** the user switches from the projected bracket to the seeding
+- **THEN** the conference tables, projected matchups and our-team summary are shown
+
 ### Requirement: Seeding per conference
 In the seeding view each conference (AFC/NFC, East/West) SHALL list all of its teams in ESPN's current seed order, with seed number, logo, abbreviation, win-loss record (ties for the NFL) and win percentage. Teams in a playoff spot SHALL be visually separated from teams outside by a cut line. NFL: seeds 1–7 are in, seeds 1–4 are marked as division leaders, and seed 1 is marked as having the first-round bye. NBA: seeds 1–6 are in the playoffs, seeds 7–10 are in the play-in with a second cut line below seed 10, and the rest are out. The sources' seed order SHALL be used as-is; ties are not re-broken by the app.
 
