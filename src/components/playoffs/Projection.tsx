@@ -1,13 +1,8 @@
 import { teamLogo } from '../../lib/espn'
+import { ordinal } from '../../lib/format'
 import { PLAYOFF_RULES, fmtGames, projection, races, tierOf, type Conference, type Matchup } from '../../lib/playoffs'
 import type { League, TeamConfig } from '../../lib/teams'
 import { Card, Logo } from '../ui'
-
-const ordinal = (n: number) => {
-  const s = ['th', 'st', 'nd', 'rd']
-  const v = n % 100
-  return n + (s[(v - 20) % 10] || s[v] || s[0])
-}
 
 /** Short conference name: "AFC", "West". */
 function confShort(c: Conference) {

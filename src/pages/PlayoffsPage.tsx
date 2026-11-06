@@ -1,10 +1,11 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { Bracket } from '../components/playoffs/Bracket'
 import { OurStanding, Projection } from '../components/playoffs/Projection'
 import { Seeding } from '../components/playoffs/Seeding'
-import { ErrorBox, Spinner, Updated } from '../components/ui'
+import { Empty, ErrorBox, Spinner, Tabs, Updated } from '../components/ui'
 import { urls, type ScoreboardResponse } from '../lib/espn'
-import { conferences, phaseOf, type PlayoffsData } from '../lib/playoffs'
+import { buildBracket, conferences, mergeGames, phaseOf, type Phase, type PlayoffsData } from '../lib/playoffs'
 import { useDataFile } from '../lib/seasonData'
 import type { StandingsNode } from '../lib/standings'
 import { TEAMS, type TeamConfig } from '../lib/teams'
@@ -51,11 +52,55 @@ export default function PlayoffsPage() {
 function LeagueView({ team }: { team: TeamConfig }) {
   // The league's current scoreboard: its season type sets the phase, its events feed live bracket games.
   const sb = usePoll<ScoreboardResponse>(urls.scoreboard(team), leagueInterval)
-  const phase = phaseOf(sb.data?.leagues?.[0]?.season?.type?.type)
+  const [params] = useSearchParams()
+  // Dev only: ?phase=bracket|offseason|seeding to check a view out of season.
+  const forced = import.meta.env.DEV ? (params.get('phase') as Phase | null) : null
+  const phase = sb.data ? (forced ?? phaseOf(sb.data.leagues?.[0]?.season?.type?.type)) : undefined
 
   if (sb.error && !sb.data) return <ErrorBox error={sb.error} retry={sb.refresh} />
   if (!phase) return <Spinner label="Loading playoff picture" />
-  return <SeedingView team={team} />
+  if (phase === 'seeding') return <SeedingView team={team} />
+  return <PostseasonView team={team} phase={phase} sb={sb.data} updatedAt={sb.updatedAt} />
+}
+
+function PostseasonView({ team, phase, sb, updatedAt }: { team: TeamConfig; phase: Phase; sb?: ScoreboardResponse; updatedAt?: Date }) {
+  const [view, setView] = useState<'bracket' | 'seeding'>('bracket')
+  const { data, error } = useDataFile<PlayoffsData>('playoffs')
+  const league = data?.[team.league]
+  const bracket = useMemo(() => {
+    if (!league?.available) return undefined
+    // Out of season the current scoreboard holds no postseason games, so only the stored ones count.
+    const games = mergeGames(league.postseason.games, phase === 'bracket' ? sb?.events : undefined)
+    return buildBracket(team.league, league.postseason, games)
+  }, [league, phase, sb, team.league])
+  const live = phase === 'bracket' && !!bracket && (sb?.events ?? []).some((e) => e.competitions[0].status.type.state === 'in')
+
+  return (
+    <div className="space-y-3">
+      <Tabs
+        tabs={[
+          { id: 'bracket', label: phase === 'offseason' && league?.available ? `${league.postseason.label} bracket` : 'Bracket' },
+          { id: 'seeding', label: phase === 'offseason' ? 'Standings' : 'Final seeding' },
+        ]}
+        value={view}
+        onChange={setView}
+      />
+      {view === 'seeding' ? (
+        <SeedingView team={team} />
+      ) : error ? (
+        <ErrorBox error={error} />
+      ) : !data ? (
+        <Spinner label="Loading bracket" />
+      ) : !bracket ? (
+        <Empty>The {team.league.toUpperCase()} bracket isn't available right now{league?.error ? ` (${league.error})` : ''}.</Empty>
+      ) : (
+        <>
+          {phase === 'bracket' && <Updated at={updatedAt} live={live} />}
+          <Bracket bracket={bracket} team={team} />
+        </>
+      )}
+    </div>
+  )
 }
 
 function SeedingView({ team }: { team: TeamConfig }) {
