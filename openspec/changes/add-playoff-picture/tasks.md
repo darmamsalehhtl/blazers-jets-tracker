@@ -37,3 +37,8 @@
 ## 6. Integration
 
 - [x] 6.1 Run `npm run lint` and `npm run build`. Click through Home → Playoffs → NBA → a Blazers bracket game and back at 390 px and on a laptop, light and dark, spoilers on and off. Check that the other tabs (Live, Draft, MVP, Calendar) behave as before. Push to `main` and check the deployed page after CI builds `playoffs.json`.
+
+## 7. Bracket layout (review feedback)
+
+- [ ] 7.1 Redraw `src/components/playoffs/Bracket.tsx` as a real bracket tree (design Decision 5, revised): mirrored halves with the final in the middle from `lg` up, round titles, SVG connectors, compact matchup cards with seeds under the abbreviations and a winner marker, the NFL bye card in the Wild Card column, and a games panel under the tree for the selected matchup (a live series selected by default). Verify against the 2025-26 NBA and 2025 NFL brackets at 1280 px in light and dark mode: every card's centre lines up with its connector. Commit ("Draw the playoffs as a bracket tree").
+- [ ] 7.2 Draw the NBA play-in as a tree per conference (7 v 8 and 9 v 10 into the 8th-seed game) under the main bracket, and below `lg` show one conference half at a time with a West/East switch and the final below. Verify at 390 and 768 px that there's no horizontal page scroll, and that the live test (Task 4.3 setup) still shows the live score. Commit ("Show the play-in tree and a one-conference bracket on phones").
