@@ -11,7 +11,7 @@
   - `available`/`error` per league
 
   Update the file list in the script's header comment. Verify with `ONLY=playoffs node scripts/build-data.mjs`: `public/data/playoffs.json` has 32 NFL and 30 NBA teams in `remaining`, the Jets' remaining opponents match their schedule, and the NBA `postseason` holds the 2025-26 play-in and series games with seeds and series wins. Commit ("Precompute remaining schedules and postseason games").
-- [ ] 1.3 Add the `PlayoffsData` types and a strength-of-schedule helper to `src/lib/playoffs.ts`: drop remaining games whose date has passed, then average the opponents' live win %. Verify with the scratch script against a sample of `playoffs.json`. Commit ("Compute remaining strength of schedule").
+- [x] 1.3 Add the `PlayoffsData` types and a strength-of-schedule helper to `src/lib/playoffs.ts`: drop remaining games whose date has passed, then average the opponents' live win %. Verify with the scratch script against a sample of `playoffs.json`. Commit ("Compute remaining strength of schedule").
 
 ## 2. Page and navigation
 

@@ -182,3 +182,83 @@ export function fmtGames(g: number) {
   if (a === 0) return '0'
   return Number.isInteger(a) ? String(a) : a.toFixed(1)
 }
+
+// ---------- Precomputed inputs (public/data/playoffs.json) ----------
+
+export interface RemainingGame {
+  opp: string
+  /** Kickoff / tip-off (ISO) */
+  date: string
+}
+
+export interface PostseasonTeam {
+  id: string
+  abbr: string
+  home: boolean
+  score: number | null
+  winner: boolean
+  seriesWins: number | null
+}
+
+export interface PostseasonGame {
+  id: string
+  date: string
+  /** 3 = playoffs, 5 = NBA play-in */
+  seasonType: number
+  note: string
+  state: 'pre' | 'in' | 'post'
+  detail?: string
+  teams: PostseasonTeam[]
+  series?: { summary: string; completed: boolean; total: number }
+}
+
+export interface PlayoffsLeague {
+  available: boolean
+  error?: string
+  season: number
+  remaining: Record<string, RemainingGame[]>
+  postseason: {
+    season: number
+    label: string
+    seeds: Record<string, { seed: number | null; conf: string }>
+    games: PostseasonGame[]
+  }
+}
+
+export interface PlayoffsData {
+  updatedAt: string
+  nfl: PlayoffsLeague
+  nba: PlayoffsLeague
+}
+
+/** A game counts as played this long after its start, so today's late games stay "left" until they end. */
+const PLAYED_AFTER_MS = 4 * 3600_000
+
+export interface Remaining {
+  left: number
+  /** Average win % of remaining opponents (repeats counted); null without games or data */
+  sos: number | null
+}
+
+/** Games left and remaining strength of schedule for one team, using live win percentages. */
+export function remainingFor(
+  games: RemainingGame[] | undefined,
+  winPct: Record<string, number>,
+  at = Date.now(),
+): Remaining | null {
+  if (!games) return null
+  const left = games.filter((g) => new Date(g.date).getTime() + PLAYED_AFTER_MS > at)
+  const pcts = left.map((g) => winPct[g.opp]).filter((p): p is number => Number.isFinite(p))
+  return { left: left.length, sos: pcts.length ? pcts.reduce((a, b) => a + b, 0) / pcts.length : null }
+}
+
+/** Abbreviation → live win % across all conferences. */
+export function winPcts(confs: Conference[]): Record<string, number> {
+  const out: Record<string, number> = {}
+  for (const c of confs)
+    for (const t of c.teams) {
+      const gp = t.wins + t.losses + t.ties
+      out[t.entry.team.abbreviation] = gp ? (t.wins + t.ties / 2) / gp : 0
+    }
+  return out
+}
