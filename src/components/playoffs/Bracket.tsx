@@ -31,8 +31,10 @@ function columnsOf(b: BracketData): Column[] {
   return cols
 }
 
-/** The round being played: the last one with a matchup set (or the first). */
+/** The round to open on phones: one with a live game, else the last with a matchup set (or the first). */
 function currentColumn(cols: Column[]) {
+  const live = cols.find((c) => Object.values(c.byConf).some((slots) => slots.some((s) => s.series?.live)))
+  if (live) return live.id
   const set = cols.filter((c) => Object.values(c.byConf).some((slots) => slots.some((s) => s.series)))
   return (set.at(-1) ?? cols[0]).id
 }
@@ -198,7 +200,12 @@ function SeriesCard({ s, league, team }: { s: Series; league: 'nfl' | 'nba'; tea
 
 function status(s: Series): string {
   const live = s.games.find((g) => g.state === 'in')
-  if (live) return live.detail ?? 'In progress'
+  if (live) {
+    if (s.bestOf === 1) return live.detail ?? 'In progress'
+    const away = live.teams.find((t) => !t.home) ?? live.teams[0]
+    const home = live.teams.find((t) => t.home) ?? live.teams[1]
+    return `Game ${s.games.indexOf(live) + 1}: ${away.abbr} ${away.score ?? 0} @ ${home.abbr} ${home.score ?? 0} · ${live.detail ?? 'live'}`
+  }
   const [a, b] = s.teams
   if (s.bestOf === 1) {
     const g = s.games[0]

@@ -1,7 +1,7 @@
 // Playoff picture: league rules, seeding helpers and (further down) the
 // postseason bracket. Seeds are ESPN's `playoffseed`, never re-broken here.
 
-import type { EspnEvent } from './espn'
+import type { EspnEvent, ScoreboardResponse } from './espn'
 import type { League } from './teams'
 import { sn, sv, type StandingEntry, type StandingsNode } from './standings'
 
@@ -269,10 +269,15 @@ export function winPcts(confs: Conference[]): Record<string, number> {
 /** seeding = regular season; bracket = play-in or playoffs running; offseason = show the last bracket. */
 export type Phase = 'seeding' | 'bracket' | 'offseason'
 
-/** Phase from the current scoreboard's season type (ESPN: 1 pre, 2 regular, 3 post, 4 off, 5 play-in). */
-export function phaseOf(seasonType: number | undefined): Phase | undefined {
-  if (seasonType === undefined) return undefined
-  if (seasonType === 2) return 'seeding'
+/**
+ * Phase from the current scoreboard (ESPN season types: 1 pre, 2 regular, 3 post, 4 off, 5 play-in).
+ * A play-in or playoff game on the board means bracket, whatever the league's season type says.
+ */
+export function phaseOf(sb: ScoreboardResponse | undefined): Phase | undefined {
+  if (!sb) return undefined
+  if (sb.events?.some((e) => e.season?.type === 3 || e.season?.type === 5)) return 'bracket'
+  const seasonType = sb.leagues?.[0]?.season?.type?.type
+  if (seasonType === 2 || seasonType === undefined) return 'seeding'
   if (seasonType === 3 || seasonType === 5) return 'bracket'
   return 'offseason'
 }

@@ -50,12 +50,13 @@ export default function PlayoffsPage() {
 }
 
 function LeagueView({ team }: { team: TeamConfig }) {
-  // The league's current scoreboard: its season type sets the phase, its events feed live bracket games.
-  const sb = usePoll<ScoreboardResponse>(urls.scoreboard(team), leagueInterval)
   const [params] = useSearchParams()
-  // Dev only: ?phase=bracket|offseason|seeding to check a view out of season.
+  // Dev only: ?phase=bracket|offseason|seeding and ?sbdate=YYYYMMDD to check views out of season.
   const forced = import.meta.env.DEV ? (params.get('phase') as Phase | null) : null
-  const phase = sb.data ? (forced ?? phaseOf(sb.data.leagues?.[0]?.season?.type?.type)) : undefined
+  const sbDate = (import.meta.env.DEV && params.get('sbdate')) || undefined
+  // The league's current scoreboard: its season type sets the phase, its events feed live bracket games.
+  const sb = usePoll<ScoreboardResponse>(urls.scoreboard(team, sbDate), leagueInterval)
+  const phase = sb.data ? (forced ?? phaseOf(sb.data)) : undefined
 
   if (sb.error && !sb.data) return <ErrorBox error={sb.error} retry={sb.refresh} />
   if (!phase) return <Spinner label="Loading playoff picture" />
